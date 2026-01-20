@@ -158,8 +158,9 @@ server.tool(
     context: z.string().optional().describe("Additional context (file contents, search results) gathered by the Chairman."),
     models: z.array(z.string()).optional().describe("Specific models to consult. If omitted, uses defaults."),
     reasoning_effort: z.enum(["none", "low", "medium", "high"]).optional().describe("The effort level for reasoning (thinking tokens)."),
+    format: z.enum(["markdown", "json"]).optional().default("markdown").describe("The output format (markdown for humans, json for machines)."),
   },
-  async ({ query, context, models, reasoning_effort }) => {
+  async ({ query, context, models, reasoning_effort, format }) => {
     // 1. Check API Key
     if (!OPENROUTER_API_KEY) {
       return {
@@ -227,7 +228,7 @@ server.tool(
     const reviews = await Promise.all(reviewPromises);
 
     // Format Output
-    const output = {
+    const output: CouncilOutput = {
       drafts,
       reviews,
       synthesis_instructions: SYNTHESIS_PROMPT,
@@ -237,6 +238,12 @@ server.tool(
         total_tokens: [...drafts, ...reviews].reduce((acc, r) => acc + (r.usage?.total_tokens || 0), 0),
       }
     };
+
+    if (format === "json") {
+      return {
+        content: [{ type: "text", text: JSON.stringify(output, null, 2) }],
+      };
+    }
 
     const report = generateMarkdownReport(output);
 
