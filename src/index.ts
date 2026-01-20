@@ -121,8 +121,16 @@ server.tool(
   "List all available model IDs and names supported by the council via OpenRouter.",
   {},
   async () => {
+    const formattedModels = AVAILABLE_MODELS.map(m => {
+      const features = [];
+      if (m.features.reasoning) features.push("Reasoning");
+      if (m.features.caching) features.push("Caching");
+      const featureStr = features.length > 0 ? ` (Features: ${features.join(", ")})` : "";
+      return `* **${m.name}** (\`${m.id}\`)${featureStr}`;
+    }).join("\n");
+
     return {
-      content: [{ type: "text", text: JSON.stringify(AVAILABLE_MODELS, null, 2) }],
+      content: [{ type: "text", text: `### Available Models\n\n${formattedModels}` }],
     };
   }
 );
@@ -246,8 +254,18 @@ server.tool(
   {},
   async () => {
     const status = await getCouncilStatus();
+    let message = `### Council Status: ${status.exists ? "Active" : "Not Configured"}\n`;
+    message += `* **Config File**: \`${status.configPath}\`\n`;
+    if (status.exists) {
+      message += `* **Reasoning Effort**: ${status.reasoning_effort}\n`;
+      message += `* **Active Members**:\n`;
+      message += status.models.map(m => `    * \`${m}\``).join("\n");
+    } else {
+      message += "\nRun `/council:setup` to configure your council.";
+    }
+    
     return {
-      content: [{ type: "text", text: JSON.stringify(status) }],
+      content: [{ type: "text", text: message }],
     };
   }
 );
