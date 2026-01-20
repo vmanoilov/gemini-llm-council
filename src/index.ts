@@ -29,7 +29,7 @@ if (!OPENROUTER_API_KEY) {
 
 const server = new McpServer({
   name: "gemini-llm-council",
-  version: "0.1.0",
+  version: "0.2.0",
 });
 
 async function callLLM(model: string, messages: any[], reasoningEffort: string = "none"): Promise<LLMResponse> {
