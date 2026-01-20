@@ -1,7 +1,7 @@
 {
   "name": "gemini-llm-council",
   "description": "Gemini CLI Extension to work with multiple LLMs at once",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "contextFileName": "GEMINI.md",
   "settings": [
     {
