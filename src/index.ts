@@ -23,6 +23,21 @@ interface LLMResponse {
   error?: string;
 }
 
+interface CouncilMemberResponse extends LLMResponse {
+  model: string;
+}
+
+interface CouncilOutput {
+  drafts: CouncilMemberResponse[];
+  reviews: CouncilMemberResponse[];
+  synthesis_instructions: string;
+  total_usage: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
+}
+
 if (!OPENROUTER_API_KEY) {
   console.warn("Warning: OPENROUTER_API_KEY is not set in .env file.");
 }
@@ -223,11 +238,88 @@ server.tool(
       }
     };
 
+    const report = generateMarkdownReport(output);
+
     return {
-      content: [{ type: "text", text: JSON.stringify(output, null, 2) }],
+      content: [{ type: "text", text: report }],
     };
   }
 );
+
+/**
+ * Generates a structured Markdown report for the TUI and Chairman synthesis.
+ */
+function generateMarkdownReport(output: CouncilOutput): string {
+  const { drafts, reviews, total_usage, synthesis_instructions } = output;
+  
+  let md = "# 🏛️ Council Deliberation\n\n";
+
+  // Salience: Put instructions at the top for the Chairman
+  md += "## 🛠️ Synthesis Instructions\n";
+  md += `${synthesis_instructions}\n\n`;
+  
+  // Member Summary Table
+  md += "### 👥 Member Status\n\n";
+  md += "| Member | Model | Drafting | Review | Tokens |\n";
+  md += "| :--- | :--- | :---: | :---: | :---: |\n";
+  
+  drafts.forEach((d, i) => {
+    const r = reviews?.[i];
+    const dStatus = d.error ? "❌" : "✅";
+    const rStatus = r ? (r.error ? "❌" : "✅") : "-";
+    const dTokens = (d.usage?.total_tokens || 0) + (r?.usage?.total_tokens || 0);
+    md += `| ${i + 1} | \`${d.model}\` | ${dStatus} | ${rStatus} | ${dTokens.toLocaleString()} |\n`;
+  });
+  md += "\n";
+
+  // Phase 1: Drafting
+  md += "## ✍️ Phase 1: Drafting\n\n";
+  drafts.forEach((d, i) => {
+    md += `### Member ${i + 1} (\`${d.model}\`)\n`;
+    if (d.error) {
+      md += `> ⚠️ **Error**: ${d.error}\n\n`;
+    } else {
+      if (d.reasoning) {
+        md += `#### 🧠 Reasoning Path\n> ${d.reasoning.replace(/\n/g, "\n> ")}\n\n`;
+      }
+      md += "#### 📝 Draft Answer\n";
+      md += "```markdown\n";
+      md += `${d.content}\n`;
+      md += "```\n\n";
+    }
+  });
+
+  // Phase 2: Peer Review
+  md += "## 🔍 Phase 2: Peer Review\n\n";
+  if (reviews && reviews.length > 0) {
+    reviews.forEach((r, i) => {
+      if (!r) return; // Null guard to prevent crash
+      
+      md += `### Review ${i + 1} (Critique of Draft ${i + 1}) (\`${r.model}\`)\n`;
+      if (r.error) {
+        md += `> ⚠️ **Error**: ${r.error}\n\n`;
+      } else {
+        if (r.reasoning) {
+          md += `#### 🧠 Reasoning Path\n> ${r.reasoning.replace(/\n/g, "\n> ")}\n\n`;
+        }
+        md += "#### 🧐 Peer Critique\n";
+        md += "```markdown\n";
+        md += `${r.content}\n`;
+        md += "```\n\n";
+      }
+    });
+  } else {
+    md += "_No reviews were generated._\n\n";
+  }
+
+  md += "---\n";
+  md += "### 📊 Metadata Summary\n";
+  md += `* **Total Tokens**: ${total_usage.total_tokens.toLocaleString()}\n`;
+  md += `* **Prompt Tokens**: ${total_usage.prompt_tokens.toLocaleString()}\n`;
+  md += `* **Completion Tokens**: ${total_usage.completion_tokens.toLocaleString()}\n`;
+  
+  return md;
+}
 
 server.tool(
   "save_council_config",
@@ -276,8 +368,11 @@ server.tool(
   {},
   async () => {
     const config = await getCouncilConfig();
+    let md = "### ⚙️ Council Configuration\n";
+    md += `* **Default Models**: ${config.default_models.map(m => `\`${m}\``).join(", ")}\n`;
+    md += `* **Reasoning Effort**: \`${config.default_reasoning_effort || "none"}\`\n`;
     return {
-      content: [{ type: "text", text: JSON.stringify(config) }],
+      content: [{ type: "text", text: md }],
     };
   }
 );
