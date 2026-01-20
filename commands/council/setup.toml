@@ -11,6 +11,7 @@ Your goal is to help the user configure their default council members using the 
     *   **If `ask_user` is available**:
         *   Group the models into logical questions (max 4 options per question).
         *   Call `ask_user` with these grouped questions (set `multiSelect` to `true`).
+        *   **CRITICAL**: Every `header` you provide MUST be 12 characters or less (e.g., "Top Tier", "Google", "Speed").
     *   **If `ask_user` is NOT available**:
         *   Display the full list of models to the user as a Markdown bulleted list (showing both Name and ID).
         *   Ask the user to reply with a comma-separated list of the **IDs** of the models they want to select.
