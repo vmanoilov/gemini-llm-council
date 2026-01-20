@@ -48,7 +48,7 @@ Inspired by Andrej Karpathy's [llm-council](https://github.com/karpathy/llm-coun
     ```bash
     /council:setup
     ```
-    > **Note**: For the best setup experience (interactive selection), this extension supports the `ask_user_question` tool. This tool is inspired by Claude Code's AskUserQuestion and is available in the [develop branch of this Gemini CLI fork](https://github.com/theerud/gemini-cli/tree/develop). If not available, setup will fall back to a text-based workflow.
+    > **Note**: For the best setup experience (interactive selection), this extension supports the `ask_user` tool. This tool is inspired by Claude Code's AskUserQuestion and is available in the [develop branch of this Gemini CLI fork](https://github.com/theerud/gemini-cli/tree/develop) now. It will also be landing in the official Gemini CLI [soon](https://github.com/google-gemini/gemini-cli/issues/16621). If not available, setup will fall back to a text-based workflow.
 
 ## Commands
 

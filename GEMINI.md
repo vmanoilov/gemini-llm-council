@@ -34,7 +34,7 @@ When helping the user configure the council:
 
 *   **Discovery**: You can call `council/get_council_status` at any time to see the current active models and configuration file location.
 *   **Tool Usage**:
-    *   **Preferred**: If `ask_user_question` is available, group model options into a single call with multiple questions.
+    *   **Preferred**: If `ask_user` is available, group model options into a single call with multiple questions.
     *   **Fallback**: If unavailable, list models in chat and parse the user's text response.
 
 *   **Handling Text Input (Fallback)**:
