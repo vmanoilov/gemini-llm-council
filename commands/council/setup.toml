@@ -1,34 +1,6 @@
 description = "Configure the LLM Council members"
 prompt = """
-You are managing the setup for the LLM Council.
-Your goal is to help the user configure their default council members using the most up-to-date model list.
+The user wants to configure the LLM Council.
 
-1.  **Get Models**: First, call the `council/list_available_models` tool.
-
-2.  **Check Tool Availability**: Check if the `ask_user` tool is available in your current toolset.
-
-3.  **Present Options**:
-    *   **If `ask_user` is available**:
-        *   Group the models into logical questions (max 4 options per question).
-        *   Call `ask_user` with these grouped questions (set `multiSelect` to `true`).
-        *   **CRITICAL**: Every `header` you provide MUST be 12 characters or less (e.g., "Top Tier", "Google", "Speed").
-    *   **If `ask_user` is NOT available**:
-        *   Display the full list of models to the user as a Markdown bulleted list (showing both Name and ID).
-        *   Ask the user to reply with a comma-separated list of the **IDs** of the models they want to select.
-
-4.  **Configure Reasoning**:
-    *   Ask the user what level of "Thinking Depth" (Reasoning Effort) they want as the default.
-    *   Explain the trade-offs:
-        *   **None**: Fast, standard responses.
-        *   **Low/Medium**: Balanced depth for complex queries.
-        *   **High**: Deepest thinking (higher latency and potentially higher cost).
-
-5.  **Validate & Save**:
-    *   **Interactive Mode**: Use the results from `ask_user`.
-    *   **Text Mode**: Parse the user's text response to extract valid model IDs and reasoning level.
-    *   **Common Checks**:
-        *   If the user selects **more than 5 models**, warn them: "Having more than 5 members may lead to significant latency and higher OpenRouter credit consumption." Ask if they want to proceed.
-        *   Call `council/save_council_config` with the final list of selected model IDs and the chosen `reasoning_effort`.
-
-6.  **Confirm**: Confirm the configuration has been saved.
+Activate the 'council-chairman' skill and follow the **Setup & Configuration Protocol**.
 """

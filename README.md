@@ -55,7 +55,7 @@ Inspired by Andrej Karpathy's [llm-council](https://github.com/karpathy/llm-coun
 | Command | Description |
 | :--- | :--- |
 | `/council:setup` | Select and save your preferred models for the current workspace. |
-| `/council:ask` | Consult the Council on a specific query or task. |
+| `/council:ask` | Consult the Council. Supports `--json` or `--markdown` flags. |
 | `/council:status` | Show active council members and the configuration file path. |
 
 ## Usage
@@ -63,23 +63,24 @@ Inspired by Andrej Karpathy's [llm-council](https://github.com/karpathy/llm-coun
 ### Workspace Isolation
 Configurations are project-specific and stored in `.gemini/llm-council.json` within your project root. This allows you to have a "Fast & Cheap" council for one project and a "God Mode" council for another.
 
-### Ask the Council
-```bash
+### Convening the Council
+You can explicitly invoke the council or specify a preferred output format:
+```
 /council:ask "What is the best way to implement a singleton in TypeScript?"
+/council:ask --json "Compare these three sorting algorithms."
 ```
 
-### Contextual Review
-The Council can review files or research topics if you ask the Chairman to do so.
-```bash
-/council:ask "Review src/index.ts and suggest improvements."
-```
-(The Chairman will read the file first, then pass it to the Council).
+### Proactive Intelligence
+The LLM Council functions as an on-demand "Brain Trust." While you can use slash commands for direct control, the Gemini Agent is also trained to recognize high-stakes scenarios—such as intricate system designs or difficult debugging— and will proactively offer to engage the Council for a multi-perspective analysis.
 
 ## Architecture
 
-*   **Drafting Phase**: Selected models provide independent answers.
-*   **Peer Review Phase**: Models critique each other's anonymized answers.
-*   **Synthesis**: The Gemini CLI Agent (Chairman) synthesizes the drafts and reviews into a final consensus answer, prioritizing catches made during peer review.
+The extension is built as a specialized Agent Skill, providing a seamless and token-efficient integration.
+
+*   **Efficiency by Design**: The Council's heavy reasoning protocols are only loaded when active, keeping your primary conversation context clean and responsive.
+*   **Drafting Phase**: Selected models provide independent, diverse solutions to your query.
+*   **Peer Review Phase**: Models critique each other's anonymized drafts to identify edge cases and vulnerabilities.
+*   **Synthesis**: The Chairman (your primary agent) synthesizes the collective findings into a single, authoritative consensus, prioritizing the most robust and secure path forward.
 
 ## Inspiration
 
