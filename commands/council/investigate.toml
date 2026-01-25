@@ -1,0 +1,10 @@
+description = "Run a multi-turn investigation with the council. Usage: /council:investigate <query>"
+prompt = """
+The user has requested a Council Investigation. This is a stateful, iterative process.
+
+<user_query>
+{{args}}
+</user_query>
+
+Activate the 'council-chairman' skill and follow the **Investigation Protocol** to initialize a session, handle RFIs (Request for Information), and synthesize a final verdict.
+"""

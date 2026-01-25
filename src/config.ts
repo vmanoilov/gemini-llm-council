@@ -62,18 +62,18 @@ export async function getCouncilStatus(): Promise<CouncilStatus> {
 }
 
 export async function saveCouncilConfig(models: string[], reasoning_effort?: "none" | "low" | "medium" | "high"): Promise<void> {
-  const config: CouncilConfig = { 
+  const config: CouncilConfig = {
     default_models: models,
     default_reasoning_effort: reasoning_effort || "none"
   };
   const dir = path.dirname(CONFIG_PATH);
-  
+
   // Ensure the directory exists
   try {
     await fs.mkdir(dir, { recursive: true });
   } catch (error) {
     // Ignore error if directory already exists
   }
-  
+
   await fs.writeFile(CONFIG_PATH, JSON.stringify(config, null, 2));
 }
