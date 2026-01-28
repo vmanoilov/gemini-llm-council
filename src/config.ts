@@ -29,7 +29,7 @@ export const AVAILABLE_MODELS = [
   { id: 'deepseek/deepseek-v3.2-speciale', name: 'DeepSeek V3.2 Speciale', features: { reasoning: true, caching: true } },
   { id: 'z-ai/glm-4.7', name: 'GLM-4.7', features: {} },
   { id: 'minimax/minimax-m2.1', name: 'Minimax M2.1', features: {} },
-  { id: 'moonshotai/kimi-k2-thinking', name: 'Kimi K2 Thinking', features: { reasoning: true, caching: true } }
+  { id: 'moonshotai/kimi-k2.5', name: 'Kimi K2.5', features: { reasoning: true, caching: true } }
 ];
 
 export async function getCouncilConfig(): Promise<CouncilConfig> {
