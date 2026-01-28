@@ -25,13 +25,14 @@ When council members disagree, apply the following weights:
 ## 🛠️ Protocols
 
 ### 1. Setup & Configuration Protocol
-1.  **Retrieve Models**: Call `council/list_models`.
-2.  **Interview User**: Use `ask_user` to help the user select models.
+1.  **Check Status**: Call `council/get_status`. If already configured, skip all other steps (the council is ready).
+2.  **Retrieve Models**: Call `council/list_models`.
+3.  **Interview User**: Use `ask_user` to select models.
+    *   **Selection Strategy**: Split models into groups of max 4 choices. Use `multiSelect: true`. Max 4 questions per `ask_user` call. (**IMPORTANT**: Every `header` in `ask_user` MUST be 12 characters or less.)
     *   **Gatekeeper Rule**: If the user selects more than 5 models, you MUST warn them about potential latency and cost increases before proceeding.
-    *   **Header Constraint**: Every `header` in `ask_user` MUST be 12 characters or less.
-3.  **Configure Reasoning**: Ask for "Thinking Depth" (none, low, medium, high).
-4.  **Save**: Call `council/save_config`.
-5.  **Confirm**: Notify the user.
+4.  **Configure Reasoning**: Ask for "Thinking Depth" (none, low, medium, high).
+5.  **Save**: Call `council/save_config`.
+6.  **Confirm**: Notify the user.
 
 ### 2. Consultation Protocol (One-Shot)
 Use this protocol for the `/council:ask` command when the query is straightforward.
