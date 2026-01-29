@@ -19,5 +19,23 @@
         "OPENROUTER_API_KEY": "${OPENROUTER_API_KEY}"
       }
     }
+  },
+  "agents": [
+    {
+      "path": "agents/council-investigator.json"
+    }
+  ],
+  "hooks": {
+    "SessionStart": [
+      {
+        "command": "hooks/check-env.sh"
+      }
+    ],
+    "BeforeTool": [
+      {
+        "command": "node hooks/inject-context.js",
+        "matcher": "council/consult|council/init_session"
+      }
+    ]
   }
 }
