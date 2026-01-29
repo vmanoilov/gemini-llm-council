@@ -1,6 +1,6 @@
-description = "Show the current LLM Council status and configuration"
+description = "Check the council status"
 prompt = """
-The user wants to check the status of the LLM Council.
+The user wants to check the LLM Council status.
 
-Activate the 'council-chairman' skill and follow the **Status Reporting Protocol**.
+Activate the 'council-chairman' skill. Call `council/get_status` and report the current active models, reasoning effort, and whether the config is Project-specific or Global.
 """

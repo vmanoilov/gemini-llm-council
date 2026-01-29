@@ -1,10 +1,10 @@
-description = "Run a multi-turn investigation with the council. Usage: /council:investigate <query>"
+description = "Run an autonomous multi-model investigation. Usage: /council:investigate <cryptic_error_or_issue>"
 prompt = """
-The user has requested a Council Investigation. This is a stateful, iterative process.
+The user has requested an autonomous deep investigation by the Council.
 
-<user_query>
+<issue>
 {{args}}
-</user_query>
+</issue>
 
-Activate the 'council-chairman' skill and follow the **Investigation Protocol** to initialize a session, handle RFIs (Request for Information), and synthesize a final verdict.
+Activate the 'council-chairman' skill and follow the **Investigation Protocol**. You should delegate the heavy lifting to the `council_investigator` subagent.
 """
