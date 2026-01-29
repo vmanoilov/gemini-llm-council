@@ -27,6 +27,7 @@ export interface CouncilSession {
   drafts: CouncilMemberResponse[];
   reviews: CouncilMemberResponse[];
   reasoningEffort: "none" | "low" | "medium" | "high";
+  requestedPaths: string[]; // Track historical RFIs to prevent loops
 }
 
 const SESSION_TTL_MS = 15 * 60 * 1000; // 15 minutes
@@ -62,7 +63,8 @@ export class SessionStore {
       reasoningEffort,
       lastAccessed: Date.now(),
       drafts: [],
-      reviews: []
+      reviews: [],
+      requestedPaths: []
     };
 
     this.sessions.set(this.getSessionKey(projectPath, sessionId), session);

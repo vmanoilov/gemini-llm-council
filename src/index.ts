@@ -3,11 +3,18 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import axios from "axios";
 import * as dotenv from "dotenv";
-import { AVAILABLE_MODELS, getCouncilConfig, getCouncilStatus, saveCouncilConfig } from "./config.js";
+import * as fs from "node:fs/promises";
+import * as path from "node:path";
+import { AVAILABLE_MODELS, getCouncilConfig, getCouncilStatus, saveCouncilConfig, GLOBAL_CONFIG_DIR } from "./config.js";
 import { DRAFTING_PROMPT, REVIEW_PROMPT, SYNTHESIS_PROMPT } from "./prompts.js";
 import { sessionStore, CouncilSession, CouncilMemberResponse, SessionStatus } from "./sessions.js";
 
 dotenv.config();
+
+// Safe __dirname for both CJS and ESM
+const _dirname = typeof __dirname !== 'undefined'
+  ? __dirname
+  : path.dirname(require('node:url').fileURLToPath((global as any).import?.meta?.url || 'file:'));
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || process.env.GEMINI_CLI_OPENROUTER_API_KEY;
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
@@ -34,10 +41,30 @@ interface CouncilOutput {
     total_tokens: number;
   };
   session_id: string;
+  timestamp: number; // For cleanup
 }
 
 // In-memory store for raw deliberations to be exposed as MCP resources
 const deliberationsStore = new Map<string, CouncilOutput>();
+
+/**
+ * Periodically cleans up old deliberations to prevent memory leaks.
+ * Keeps records for 1 hour.
+ */
+function cleanupDeliberations() {
+  const now = Date.now();
+  const TTL = 60 * 60 * 1000; // 1 hour
+  let count = 0;
+  for (const [id, data] of deliberationsStore.entries()) {
+    if (now - data.timestamp > TTL) {
+      deliberationsStore.delete(id);
+      count++;
+    }
+  }
+  if (count > 0) {
+    console.error(`[Council] Cleaned up ${count} expired deliberations from memory.`);
+  }
+}
 
 function parseRFIs(content: string): string[] {
   const rfiRegex = /<context_request>(.*?)<\/context_request>/g;
@@ -63,7 +90,7 @@ server.resource(
     if (!match) throw new Error("Invalid resource URI");
     const sessionId = match[1];
     const deliberation = deliberationsStore.get(sessionId);
-    if (!deliberation) throw new Error("Deliberation not found");
+    if (!deliberation) throw new Error("Deliberation not found or expired");
 
     return {
       contents: [{
@@ -75,35 +102,66 @@ server.resource(
   }
 );
 
-// Register Persona Prompts
-const BUILTIN_PERSONAS: Record<string, string> = {
-  "security": "Act as a paranoid security researcher. Focus on input validation, RCE, and secrets.",
-  "performance": "Act as a high-performance computing expert. Focus on Big O, concurrency, and I/O bottlenecks."
-};
+// Persona cache with mtime tracking
+interface CachedPersona {
+  content: string;
+  mtime: number;
+}
+const personaCache = new Map<string, CachedPersona>();
+
+async function getPersonaInstructions(name: string): Promise<string> {
+  const BUILTIN_PERSONAS: Record<string, string> = {
+    "security": "Act as a paranoid security researcher. Focus on input validation, RCE, and secrets.",
+    "performance": "Act as a high-performance computing expert. Focus on Big O, concurrency, and I/O bottlenecks."
+  };
+
+  // 1. Try to load from the extension's prompts/ directory (v0.4.0+ WYSIWYG)
+  const promptPath = path.join(_dirname, "..", "prompts", `${name}.md`);
+  try {
+    const stats = await fs.stat(promptPath);
+    const cached = personaCache.get(promptPath);
+    if (cached && cached.mtime === stats.mtimeMs) {
+      return cached.content;
+    }
+    const content = await fs.readFile(promptPath, "utf-8");
+    personaCache.set(promptPath, { content, mtime: stats.mtimeMs });
+    return content;
+  } catch (e) {
+    // File not found, fall through
+  }
+
+  // 2. Try to load from custom personas.json in global config
+  const customPersonasPath = path.join(GLOBAL_CONFIG_DIR, "personas.json");
+  try {
+    const stats = await fs.stat(customPersonasPath);
+    const cacheKey = `json:${customPersonasPath}`;
+    const cached = personaCache.get(cacheKey);
+    
+    let personasJson: Record<string, string>;
+    if (cached && cached.mtime === stats.mtimeMs) {
+      personasJson = JSON.parse(cached.content);
+    } else {
+      const data = await fs.readFile(customPersonasPath, "utf-8");
+      personaCache.set(cacheKey, { content: data, mtime: stats.mtimeMs });
+      personasJson = JSON.parse(data);
+    }
+
+    if (personasJson[name]) {
+      return personasJson[name];
+    }
+  } catch (e) {
+    // Ignore JSON errors or missing file
+  }
+
+  // 3. Built-in hardcoded fallbacks
+  return BUILTIN_PERSONAS[name] || "Act as an expert reviewer.";
+}
 
 server.prompt(
   "persona",
   { name: z.string().describe("Name of the persona (security, performance, or custom ones)") },
   async ({ name }) => {
-    let instructions = BUILTIN_PERSONAS[name];
-
-    // Try to load custom personas from the global config directory
-    try {
-      const { GLOBAL_CONFIG_DIR } = await import("./config.js");
-      const customPersonasPath = Buffer.from(require("node:path").join(GLOBAL_CONFIG_DIR, "personas.json")).toString();
-      const customData = await require("node:fs/promises").readFile(customPersonasPath, "utf-8");
-      const customPersonas = JSON.parse(customData);
-      if (customPersonas[name]) {
-        instructions = customPersonas[name];
-      }
-    } catch (e) {
-      // Ignore if file doesn't exist or is invalid
-    }
-
-    if (!instructions) {
-      instructions = "Act as an expert reviewer.";
-    }
-
+    const instructions = await getPersonaInstructions(name);
     return {
       description: `Instructions for the ${name} persona`,
       messages: [{
@@ -120,7 +178,14 @@ async function callLLM(model: string, messages: any[], reasoningEffort: string =
 
     // Inject cache_control for Anthropic if messages are large
     const processedMessages = messages.map((msg, idx) => {
-      if (isAnthropic && msg.content && msg.content.length > 2000 && idx < messages.length - 1) {
+      let contentLength = 0;
+      if (typeof msg.content === 'string') {
+        contentLength = msg.content.length;
+      } else if (Array.isArray(msg.content)) {
+        contentLength = msg.content.reduce((acc: number, block: any) => acc + (block.text?.length || 0), 0);
+      }
+
+      if (isAnthropic && contentLength > 2000 && idx < messages.length - 1) {
         return {
           ...msg,
           cache_control: { type: "ephemeral" }
@@ -161,7 +226,6 @@ async function callLLM(model: string, messages: any[], reasoningEffort: string =
     if (message.reasoning) {
       reasoning = message.reasoning;
     } else if (message.reasoning_details) {
-      // Some models return reasoning_details array
       reasoning = Array.isArray(message.reasoning_details)
         ? message.reasoning_details.map((d: any) => d.text || "").join("\n")
         : JSON.stringify(message.reasoning_details);
@@ -176,18 +240,11 @@ async function callLLM(model: string, messages: any[], reasoningEffort: string =
     let errorMessage = error.message;
     if ((axios as any).isAxiosError?.(error) || error.isAxiosError) {
       if (error.response) {
-        const status = error.response.status;
         const body = error.response.data;
-        if (status === 401) {
-          errorMessage = "401 Unauthorized (Invalid API Key)";
-        } else if (status === 402) {
-          errorMessage = "402 Payment Required (Insufficient Credits)";
-        } else if (status === 429) {
-          errorMessage = "429 Too Many Requests (Rate Limit Exceeded)";
-        } else if (body && body.error && body.error.message) {
+        if (body && body.error && body.error.message) {
           errorMessage = body.error.message;
         } else {
-          errorMessage = `${status} ${error.response.statusText}`;
+          errorMessage = `${error.response.status} ${error.response.statusText}`;
         }
       }
     }
@@ -218,6 +275,8 @@ server.tool(
 );
 
 async function initSessionLogic(query: string, context?: string, models?: string[], reasoning_effort?: string): Promise<CouncilSession | { error: string }> {
+  cleanupDeliberations(); // Proactive cleanup
+  
   let selectedModels = models;
   let effort = reasoning_effort;
 
@@ -285,11 +344,12 @@ async function runDeliberationLogic(session_id: string, force: boolean): Promise
   });
 
   // Filter RFIs that were already requested in this session to avoid infinite loops
-  const uniqueRFIs = Array.from(new Set(allRFIs));
+  const uniqueRFIs = Array.from(new Set(allRFIs)).filter(path => !session.requestedPaths.includes(path));
 
   if (uniqueRFIs.length > 0 && !force && session.rfiRoundCount < 2) {
     session.rfiRoundCount++;
     session.status = "STALLED_RFI";
+    session.requestedPaths.push(...uniqueRFIs); // Record these requests
     return {
       rfi: {
         status: "STALLED_RFI",
@@ -330,7 +390,8 @@ async function runDeliberationLogic(session_id: string, force: boolean): Promise
       completion_tokens: [...drafts, ...reviews].reduce((acc, r) => acc + (r.usage?.completion_tokens || 0), 0),
       total_tokens: [...drafts, ...reviews].reduce((acc, r) => acc + (r.usage?.total_tokens || 0), 0),
     },
-    session_id: session.id
+    session_id: session.id,
+    timestamp: Date.now()
   };
 
   // Store for resource access
