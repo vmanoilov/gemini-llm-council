@@ -33,7 +33,11 @@ interface CouncilOutput {
     completion_tokens: number;
     total_tokens: number;
   };
+  session_id: string;
 }
+
+// In-memory store for raw deliberations to be exposed as MCP resources
+const deliberationsStore = new Map<string, CouncilOutput>();
 
 function parseRFIs(content: string): string[] {
   const rfiRegex = /<context_request>(.*?)<\/context_request>/g;
@@ -49,6 +53,66 @@ const server = new McpServer({
   name: "gemini-llm-council",
   version: "0.3.0",
 });
+
+// Register Resource: Raw Deliberations
+server.resource(
+  "deliberation",
+  "council://sessions/[id]/raw-deliberation",
+  async (uri) => {
+    const match = uri.toString().match(/^council:\/\/sessions\/(.*?)\/raw-deliberation$/);
+    if (!match) throw new Error("Invalid resource URI");
+    const sessionId = match[1];
+    const deliberation = deliberationsStore.get(sessionId);
+    if (!deliberation) throw new Error("Deliberation not found");
+
+    return {
+      contents: [{
+        uri: uri.toString(),
+        mimeType: "application/json",
+        text: JSON.stringify(deliberation, null, 2)
+      }]
+    };
+  }
+);
+
+// Register Persona Prompts
+const BUILTIN_PERSONAS: Record<string, string> = {
+  "security": "Act as a paranoid security researcher. Focus on input validation, RCE, and secrets.",
+  "performance": "Act as a high-performance computing expert. Focus on Big O, concurrency, and I/O bottlenecks."
+};
+
+server.prompt(
+  "persona",
+  { name: z.string().describe("Name of the persona (security, performance, or custom ones)") },
+  async ({ name }) => {
+    let instructions = BUILTIN_PERSONAS[name];
+
+    // Try to load custom personas from the global config directory
+    try {
+      const { GLOBAL_CONFIG_DIR } = await import("./config.js");
+      const customPersonasPath = Buffer.from(require("node:path").join(GLOBAL_CONFIG_DIR, "personas.json")).toString();
+      const customData = await require("node:fs/promises").readFile(customPersonasPath, "utf-8");
+      const customPersonas = JSON.parse(customData);
+      if (customPersonas[name]) {
+        instructions = customPersonas[name];
+      }
+    } catch (e) {
+      // Ignore if file doesn't exist or is invalid
+    }
+
+    if (!instructions) {
+      instructions = "Act as an expert reviewer.";
+    }
+
+    return {
+      description: `Instructions for the ${name} persona`,
+      messages: [{
+        role: "user",
+        content: { type: "text", text: instructions }
+      }]
+    };
+  }
+);
 
 async function callLLM(model: string, messages: any[], reasoningEffort: string = "none"): Promise<LLMResponse> {
   try {
@@ -216,8 +280,6 @@ async function runDeliberationLogic(session_id: string, force: boolean): Promise
   drafts.forEach(d => {
     if (d.content) {
       const rfis = parseRFIs(d.content);
-      // Heuristic: If the RFI is just a filename already present in the content, it might be a hallucination or mention.
-      // But we'll trust the model if it's using the tag, provided we've warned them in the prompt.
       allRFIs.push(...rfis);
     }
   });
@@ -241,7 +303,7 @@ async function runDeliberationLogic(session_id: string, force: boolean): Promise
   session.status = "SYNTHESIZING";
 
   const allTargeted = Object.values(session.targetedContext).flat();
-  const groundTruth = session.sharedContext + (allTargeted.length > 0 ? "\n\nConsolidated Context:\n" + allTargeted.join("\n\n") : "");
+  const groundTruth = (session.sharedContext || "") + (allTargeted.length > 0 ? "\n\nConsolidated Context:\n" + allTargeted.join("\n\n") : "");
 
   const reviewPacket = "Here are the answers from other council members:\n\n" +
     drafts.map((d, i) => `--- Answer ${i + 1} ---\n${d.content || "[Error: " + d.error + "]"}`).join("\n\n");
@@ -267,8 +329,12 @@ async function runDeliberationLogic(session_id: string, force: boolean): Promise
       prompt_tokens: [...drafts, ...reviews].reduce((acc, r) => acc + (r.usage?.prompt_tokens || 0), 0),
       completion_tokens: [...drafts, ...reviews].reduce((acc, r) => acc + (r.usage?.completion_tokens || 0), 0),
       total_tokens: [...drafts, ...reviews].reduce((acc, r) => acc + (r.usage?.total_tokens || 0), 0),
-    }
+    },
+    session_id: session.id
   };
+
+  // Store for resource access
+  deliberationsStore.set(session.id, output);
 
   return { output, report: generateMarkdownReport(output) };
 }
@@ -383,7 +449,7 @@ server.tool(
  * Generates a structured Markdown report for the TUI and Chairman synthesis.
  */
 function generateMarkdownReport(output: CouncilOutput): string {
-  const { drafts, reviews, total_usage, synthesis_instructions } = output;
+  const { drafts, reviews, total_usage, synthesis_instructions, session_id } = output;
 
   let md = "# 🏛️ Council Deliberation\n\n";
 
@@ -405,45 +471,7 @@ function generateMarkdownReport(output: CouncilOutput): string {
   });
   md += "\n";
 
-  // Phase 1: Drafting
-  md += "## ✍️ Phase 1: Drafting\n\n";
-  drafts.forEach((d, i) => {
-    md += `### Member ${i + 1} (\`${d.model}\`)\n`;
-    if (d.error) {
-      md += `> ⚠️ **Error**: ${d.error}\n\n`;
-    } else {
-      if (d.reasoning) {
-        md += `#### 🧠 Reasoning Path\n> ${d.reasoning.replace(/\n/g, "\n> ")}\n\n`;
-      }
-      md += "#### 📝 Draft Answer\n";
-      md += "```markdown\n";
-      md += `${d.content}\n`;
-      md += "```\n\n";
-    }
-  });
-
-  // Phase 2: Peer Review
-  md += "## 🔍 Phase 2: Peer Review\n\n";
-  if (reviews && reviews.length > 0) {
-    reviews.forEach((r, i) => {
-      if (!r) return; // Null guard to prevent crash
-
-      md += `### Review ${i + 1} (Critique of Draft ${i + 1}) (\`${r.model}\`)\n`;
-      if (r.error) {
-        md += `> ⚠️ **Error**: ${r.error}\n\n`;
-      } else {
-        if (r.reasoning) {
-          md += `#### 🧠 Reasoning Path\n> ${r.reasoning.replace(/\n/g, "\n> ")}\n\n`;
-        }
-        md += "#### 🧐 Peer Critique\n";
-        md += "```markdown\n";
-        md += `${r.content}\n`;
-        md += "```\n\n";
-      }
-    });
-  } else {
-    md += "_No reviews were generated._\n\n";
-  }
+  md += `> 📄 **Full Audit Trail**: Raw deliberations are available at \`council://sessions/${session_id}/raw-deliberation\`\n\n`;
 
   md += "---\n";
   md += "### 📊 Metadata Summary\n";
@@ -460,10 +488,11 @@ server.tool(
   {
     models: z.array(z.string()).describe("The list of models to save as defaults."),
     reasoning_effort: z.enum(["none", "low", "medium", "high"]).optional().describe("The default effort level for reasoning."),
+    scope: z.enum(["project", "global"]).optional().default("project").describe("The scope to save the configuration to.")
   },
-  async ({ models, reasoning_effort }) => {
-    await saveCouncilConfig(models, reasoning_effort);
-    let message = `Configuration saved. Default models: ${models.join(", ")}. Default reasoning: ${reasoning_effort || "none"}`;
+  async ({ models, reasoning_effort, scope }) => {
+    await saveCouncilConfig(models, reasoning_effort, scope as any);
+    let message = `Configuration saved to **${scope}** scope. Default models: ${models.join(", ")}. Default reasoning: ${reasoning_effort || "none"}`;
     if (models.length > 5) {
       message += "\n\nWarning: You have selected more than 5 models. This may result in higher latency and increased API costs.";
     }
@@ -480,6 +509,7 @@ server.tool(
   async () => {
     const status = await getCouncilStatus();
     let message = `### Council Status: ${status.exists ? "Active" : "Not Configured"}\n`;
+    message += `* **Scope**: \`${status.scope}\`\n`;
     message += `* **Config File**: \`${status.configPath}\`\n`;
     if (status.exists) {
       message += `* **Reasoning Effort**: ${status.reasoning_effort}\n`;
