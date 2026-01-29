@@ -35,6 +35,10 @@
       {
         "command": "node hooks/inject-context.js",
         "matcher": "council/consult|council/init_session"
+      },
+      {
+        "command": "node hooks/secure-read.js",
+        "matcher": "read_file"
       }
     ]
   }
