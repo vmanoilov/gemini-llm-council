@@ -1,25 +1,13 @@
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
+import { z } from 'zod';
 
 export const CONFIG_DIR = '.gemini';
 export const CONFIG_FILE_NAME = 'llm-council.json';
 export const PROJECT_CONFIG_PATH = path.resolve(process.cwd(), CONFIG_DIR, CONFIG_FILE_NAME);
 export const GLOBAL_CONFIG_DIR = path.resolve(os.homedir(), '.gemini', 'extensions', 'gemini-llm-council');
 export const GLOBAL_CONFIG_PATH = path.resolve(GLOBAL_CONFIG_DIR, 'config.json');
-
-export interface CouncilConfig {
-  default_models: string[];
-  default_reasoning_effort?: "none" | "low" | "medium" | "high";
-}
-
-export interface CouncilStatus {
-  models: string[];
-  reasoning_effort: string;
-  configPath: string;
-  exists: boolean;
-  scope: 'project' | 'global' | 'none';
-}
 
 export const AVAILABLE_MODELS = [
   { id: 'openai/gpt-5.2', name: 'GPT-5.2', features: { reasoning: true, caching: true } },
@@ -35,10 +23,33 @@ export const AVAILABLE_MODELS = [
   { id: 'moonshotai/kimi-k2.5', name: 'Kimi K2.5', features: { reasoning: true, caching: true } }
 ];
 
+// Zod Schema for robust validation
+// Relaxed model ID check to allow any OpenRouter model string
+const CouncilConfigSchema = z.object({
+  default_models: z.array(z.string().min(1, "Model ID cannot be empty")),
+  default_reasoning_effort: z.enum(["none", "low", "medium", "high"]).optional().default("none"),
+});
+
+export type CouncilConfig = z.infer<typeof CouncilConfigSchema>;
+
+export interface CouncilStatus {
+  models: string[];
+  reasoning_effort: string;
+  configPath: string;
+  exists: boolean;
+  scope: 'project' | 'global' | 'none';
+}
+
 async function readConfigFile(filePath: string): Promise<CouncilConfig | null> {
   try {
     const data = await fs.readFile(filePath, 'utf-8');
-    return JSON.parse(data);
+    const parsed = JSON.parse(data);
+    const result = CouncilConfigSchema.safeParse(parsed);
+    if (!result.success) {
+      console.error(`Validation error in ${filePath}:`, result.error.format());
+      return null;
+    }
+    return result.data;
   } catch (error) {
     return null;
   }
@@ -94,15 +105,18 @@ export async function saveCouncilConfig(
   reasoning_effort?: "none" | "low" | "medium" | "high",
   scope: 'project' | 'global' = 'project'
 ): Promise<void> {
-  const config: CouncilConfig = {
+  const rawConfig = {
     default_models: models,
     default_reasoning_effort: reasoning_effort || "none"
   };
+  
+  // Validate before saving
+  const validated = CouncilConfigSchema.parse(rawConfig);
   
   const configPath = scope === 'project' ? PROJECT_CONFIG_PATH : GLOBAL_CONFIG_PATH;
   const dir = path.dirname(configPath);
 
   // Ensure the directory exists
   await fs.mkdir(dir, { recursive: true });
-  await fs.writeFile(configPath, JSON.stringify(config, null, 2));
+  await fs.writeFile(configPath, JSON.stringify(validated, null, 2));
 }
