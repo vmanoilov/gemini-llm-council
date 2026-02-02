@@ -26,6 +26,7 @@ export interface CouncilSession {
   lastAccessed: number;
   drafts: CouncilMemberResponse[];
   reviews: CouncilMemberResponse[];
+  consensusScore: number; // 1-10 scale
   reasoningEffort: "none" | "low" | "medium" | "high";
   requestedPaths: string[]; // Track historical RFIs to prevent loops
 }
@@ -64,6 +65,7 @@ export class SessionStore {
       lastAccessed: Date.now(),
       drafts: [],
       reviews: [],
+      consensusScore: 0,
       requestedPaths: []
     };
 

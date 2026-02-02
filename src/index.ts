@@ -35,6 +35,7 @@ interface CouncilOutput {
   drafts: CouncilMemberResponse[];
   reviews: CouncilMemberResponse[];
   synthesis_instructions: string;
+  consensus_score: number;
   total_usage: {
     prompt_tokens: number;
     completion_tokens: number;
@@ -393,12 +394,29 @@ async function runDeliberationLogic(session_id: string, force: boolean): Promise
 
   const reviews = await Promise.all(reviewPromises);
   session.reviews = reviews;
+
+  // Extract Consensus Score (average of scores provided by reviewers)
+  let totalScore = 0;
+  let scoreCount = 0;
+  reviews.forEach(r => {
+    const scoreMatch = r.content.match(/Consensus Score:\s*(\d+)/i);
+    if (scoreMatch) {
+      const score = parseInt(scoreMatch[1]);
+      if (!isNaN(score)) {
+        totalScore += score;
+        scoreCount++;
+      }
+    }
+  });
+  session.consensusScore = scoreCount > 0 ? Math.round(totalScore / scoreCount) : 0;
+
   session.status = "COMPLETED";
 
   const output: CouncilOutput = {
     drafts,
     reviews,
     synthesis_instructions: SYNTHESIS_PROMPT,
+    consensus_score: session.consensusScore,
     total_usage: {
       prompt_tokens: [...drafts, ...reviews].reduce((acc, r) => acc + (r.usage?.prompt_tokens || 0), 0),
       completion_tokens: [...drafts, ...reviews].reduce((acc, r) => acc + (r.usage?.completion_tokens || 0), 0),
@@ -524,9 +542,17 @@ server.tool(
  * Generates a structured Markdown report for the TUI and Chairman synthesis.
  */
 function generateMarkdownReport(output: CouncilOutput): string {
-  const { drafts, reviews, total_usage, synthesis_instructions, session_id } = output;
+  const { drafts, reviews, total_usage, synthesis_instructions, session_id, consensus_score } = output;
 
   let md = "# 🏛️ Council Deliberation\n\n";
+
+  // Consensus Meter
+  if (consensus_score > 0) {
+    const filled = "█".repeat(consensus_score);
+    const empty = "░".repeat(10 - consensus_score);
+    md += `### ⚖️ Consensus Meter: ${consensus_score}/10\n`;
+    md += `\`[${filled}${empty}]\`\n\n`;
+  }
 
   // Salience: Put instructions at the top for the Chairman
   md += "## 🛠️ Synthesis Instructions\n";
