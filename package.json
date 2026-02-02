@@ -7,7 +7,7 @@
     "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1",
     "sync-version": "node scripts/sync-version.js",
-    "version": "npm run sync-version && git add gemini-extension.json"
+    "version": "npm run sync-version && git add gemini-extension.json CHANGELOG.md"
   },
   "keywords": [],
   "author": "",
