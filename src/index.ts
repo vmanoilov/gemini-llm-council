@@ -68,9 +68,12 @@ function cleanupDeliberations() {
 }
 
 function parseRFIs(content: string): string[] {
-  const rfiRegex = /<context_request>(.*?)<\/context_request>/g;
+  // Matches <context_request>path</context_request> and variations with whitespace or markdown
+  const rfiRegex = /<context_request>\s*([\s\S]*?)\s*<\/context_request>/gi;
   const matches = [...content.matchAll(rfiRegex)];
-  return matches.map(m => m[1].trim());
+  return matches
+    .map(m => m[1].trim())
+    .filter(path => path.length > 0 && !path.includes('`')); // Filter out markdown artifacts
 }
 
 if (!OPENROUTER_API_KEY) {
@@ -491,12 +494,18 @@ server.tool(
     session_id: z.string().describe("The session ID."),
     force: z.boolean().optional().default(false).describe("Force synthesis even if RFIs are pending."),
     format: z.enum(["markdown", "json"]).optional().default("markdown").describe("The output format."),
+    finalize: z.boolean().optional().default(false).describe("If true, removes the session from memory after completion."),
   },
-  async ({ session_id, force, format }) => {
+  async ({ session_id, force, format, finalize }) => {
     const result = await runDeliberationLogic(session_id, force);
     if ("error" in result) {
       return { content: [{ type: "text", text: result.error }], isError: true };
     }
+    
+    if (finalize && "output" in result) {
+      sessionStore.deleteSession(process.cwd(), session_id);
+    }
+
     if ("rfi" in result) {
       return { content: [{ type: "text", text: JSON.stringify(result.rfi, null, 2) }] };
     }
