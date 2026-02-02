@@ -1,7 +1,7 @@
 {
   "name": "gemini-llm-council",
   "description": "Gemini CLI Extension to work with multiple LLMs at once",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "contextFileName": "GEMINI.md",
   "settings": [
     {
@@ -14,7 +14,9 @@
   "mcpServers": {
     "council": {
       "command": "node",
-      "args": ["${extensionPath}/dist/index.js"],
+      "args": [
+        "${extensionPath}/dist/index.js"
+      ],
       "env": {
         "OPENROUTER_API_KEY": "${OPENROUTER_API_KEY}"
       }
