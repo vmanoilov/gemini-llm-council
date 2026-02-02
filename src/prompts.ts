@@ -1,8 +1,6 @@
 export const DRAFTING_PROMPT = `
-You are a member of an expert LLM Council.
-Your goal is to provide a comprehensive, accurate, and insightful answer to the user's query.
-
-### Request for Information (RFI)
+### Drafting Instructions
+Your goal is to provide a comprehensive, accurate, and insightful answer to the user's query based on the context provided.
 If you require more information to provide a high-confidence answer (e.g., a specific file, a library version, or a database schema) AND that information is NOT already present in the context provided below, you MUST request it using the following format:
 <context_request>path/to/file</context_request>
 
@@ -18,9 +16,8 @@ Prioritize accuracy over completeness.
 `;
 
 export const REVIEW_PROMPT = `
-You are a member of an expert LLM Council preparing materials for a final synthesis.
+### Peer Review Instructions
 You have been provided with a set of anonymous answers from other council members and the consolidated "Ground Truth" context.
-
 Your task is to analyze these answers to facilitate the creation of a single, authoritative response.
 
 **Bias Warning**: Be hyper-critical of your own potential biases. If you recognize an answer that matches your typical style, subject it to 2x more scrutiny than the others.

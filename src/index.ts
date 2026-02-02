@@ -136,7 +136,7 @@ async function getPersonaInstructions(name: string): Promise<string> {
     const stats = await fs.stat(customPersonasPath);
     const cacheKey = `json:${customPersonasPath}`;
     const cached = personaCache.get(cacheKey);
-    
+
     let personasJson: Record<string, string>;
     if (cached && cached.mtime === stats.mtimeMs) {
       personasJson = JSON.parse(cached.content);
@@ -176,7 +176,7 @@ async function callLLM(model: string, messages: any[], reasoningEffort: string =
   try {
     const isAnthropic = model.startsWith("anthropic/");
 
-    // Inject cache_control for Anthropic if messages are large
+    // Inject cache_control for Anthropic if messages are large enough to benefit
     const processedMessages = messages.map((msg, idx) => {
       let contentLength = 0;
       if (typeof msg.content === 'string') {
@@ -185,7 +185,9 @@ async function callLLM(model: string, messages: any[], reasoningEffort: string =
         contentLength = msg.content.reduce((acc: number, block: any) => acc + (block.text?.length || 0), 0);
       }
 
-      if (isAnthropic && contentLength > 2000 && idx < messages.length - 1) {
+      // Anthropic requires explicit cache_control tags.
+      // We apply it to large messages that are part of the stable prefix (not the last message).
+      if (isAnthropic && contentLength > 1024 && idx < messages.length - 1) {
         return {
           ...msg,
           cache_control: { type: "ephemeral" }
@@ -276,7 +278,7 @@ server.tool(
 
 async function initSessionLogic(query: string, context?: string, models?: string[], reasoning_effort?: string): Promise<CouncilSession | { error: string }> {
   cleanupDeliberations(); // Proactive cleanup
-  
+
   let selectedModels = models;
   let effort = reasoning_effort;
 
@@ -315,18 +317,21 @@ async function runDeliberationLogic(session_id: string, force: boolean): Promise
   const draftPromises = session.models.map(async (model) => {
     const targeted = session.targetedContext[model] || [];
 
-    let contextStr = "=== SHARED CONTEXT ===\n";
-    contextStr += session.sharedContext || "No shared context provided.\n";
+    // STABLE PREFIX: Same for both phases to maximize caching
+    const stablePrefixMessages = [
+      { role: "system", content: "You are a member of an expert LLM Council. Your goal is to provide a comprehensive, accurate, and insightful answer." },
+      { role: "user", content: `=== SHARED CONTEXT ===\n${session.sharedContext || "No shared context provided."}\n\n=== USER QUERY ===\n${session.query}` }
+    ];
 
-    if (targeted.length > 0) {
-      contextStr += "\n=== TARGETED CONTEXT (Only you can see this) ===\n";
-      contextStr += targeted.join("\n\n");
-    }
+    const draftingInstructions = DRAFTING_PROMPT + (targeted.length > 0
+      ? `\n\n=== TARGETED CONTEXT (Only you can see this) ===\n${targeted.join("\n\n")}`
+      : "");
 
     const draftingMessages = [
-      { role: "system", content: DRAFTING_PROMPT },
-      { role: "user", content: `${contextStr}\n\n=== USER QUERY ===\n${session.query}` },
+      ...stablePrefixMessages,
+      { role: "user", content: draftingInstructions },
     ];
+
     const response = await callLLM(model, draftingMessages, session.reasoningEffort);
     return { model, ...response };
   });
@@ -369,10 +374,19 @@ async function runDeliberationLogic(session_id: string, force: boolean): Promise
     drafts.map((d, i) => `--- Answer ${i + 1} ---\n${d.content || "[Error: " + d.error + "]"}`).join("\n\n");
 
   const reviewPromises = session.models.map(async (model) => {
-    const reviewMessages = [
-      { role: "system", content: REVIEW_PROMPT },
-      { role: "user", content: `Ground Truth Context:\n${groundTruth}\n\nQuery: ${session.query}\n\n${reviewPacket}` },
+    // STABLE PREFIX: Reusing the exact same prefix as Phase 1
+    const stablePrefixMessages = [
+      { role: "system", content: "You are a member of an expert LLM Council. Your goal is to provide a comprehensive, accurate, and insightful answer." },
+      { role: "user", content: `=== SHARED CONTEXT ===\n${session.sharedContext || "No shared context provided."}\n\n=== USER QUERY ===\n${session.query}` }
     ];
+
+    const reviewInstructions = `Ground Truth Context (including consolidated targeted data):\n${groundTruth}\n\n${REVIEW_PROMPT}\n\n${reviewPacket}`;
+
+    const reviewMessages = [
+      ...stablePrefixMessages,
+      { role: "user", content: reviewInstructions },
+    ];
+
     const response = await callLLM(model, reviewMessages, session.reasoningEffort);
     return { model, ...response };
   });
