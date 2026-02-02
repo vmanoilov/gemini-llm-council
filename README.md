@@ -4,6 +4,16 @@ Consult multiple top-tier LLMs simultaneously with automated peer review and syn
 
 Inspired by Andrej Karpathy's [llm-council](https://github.com/karpathy/llm-council).
 
+## ✨ Advanced Features
+
+-   **Autonomous Investigator**: New `/council:investigate` command that uses a specialized subagent to autonomously explore your codebase and gather evidence before deliberating.
+-   **Hierarchical Config**: Save your council settings **Globally** (for all projects) or **Project-specifically** (checked into your repo).
+-   **Specialized Personas**: Run targeted reviews using built-in audit personas (e.g., `security`, `performance`).
+-   **Automatic IQ**: The council automatically detects if your query requires a specific persona and applies it to guide the review phase.
+-   **Customizable**: Define your own personas in `~/.gemini/extensions/gemini-llm-council/personas.json`.
+-   **Ambient Grounding**: System hooks automatically inject core project metadata (README, package.json) into council consultations.
+-   **Deep Audit Trail**: Offload massive raw deliberations to MCP Resources. Accessible via `council://` URIs provided in the summary report.
+
 ## Prerequisites
 
 - [Gemini CLI](https://github.com/theerud/gemini-cli) installed.
@@ -18,23 +28,8 @@ Inspired by Andrej Karpathy's [llm-council](https://github.com/karpathy/llm-coun
 
 2.  **Configure API Key**:
     Use the Gemini CLI to set your OpenRouter API key securely. 
-    *(Note: This requires Gemini CLI v0.24.0-preview or later)*
     ```bash
     gemini extensions config gemini-llm-council "OpenRouter API Key"
-    ```
-
-    **Headless / CI Environments**: If the system keychain is unavailable, you can set the API key directly in your shell. 
-    
-    > [!CAUTION]
-    > **Security Warning**: Using the `GEMINI_CLI_` prefix whitelists the variable from redaction.
-    > 1. **Leakage**: Secrets will appear in plaintext in logs (`~/.gemini/logs/`) and error traces.
-    > 2. **Lack of Isolation**: These variables are global and visible to *all* installed Gemini extensions.
-    > 3. **Display**: These secrets may be displayed in plaintext during verbose output or screen sharing.
-    > 
-    > Only use this for ephemeral, headless environments (like CI/CD). For local development, always prefer the keychain-backed method.
-
-    ```bash
-    export GEMINI_CLI_OPENROUTER_API_KEY=sk-or-...
     ```
 
 3.  **Build the extension**:
@@ -44,42 +39,44 @@ Inspired by Andrej Karpathy's [llm-council](https://github.com/karpathy/llm-coun
     ```
 
 4.  **Configure Council Members**:
-    Run the setup command in your project workspace.
     ```bash
     /council:setup
     ```
+    *Choose between **Global** (All Projects) or **Project** (Current Folder) scope.*
 
 ## Commands
 
 | Command | Description |
 | :--- | :--- |
-| `/council:setup` | Select and save your preferred models for the current workspace. |
-| `/council:ask` | Consult the Council. Supports `--json` or `--markdown` flags. |
-| `/council:status` | Show active council members and the configuration file path. |
+| `/council:setup` | Select models, reasoning depth, and configuration scope. |
+| `/council:ask <query>` | One-shot consultation with automated project grounding and persona detection. |
+| `/council:investigate <issue>` | **Autonomous**: Subagent handles the file-reading and deliberation loop. |
+| `/council:persona <name> <query>` | Consult using a specific persona (e.g., `security`, `performance`, or your custom ones). |
+| `/council:status` | Show active members, reasoning effort, and active configuration scope. |
 
-## Usage
+## Usage Examples
 
-### Workspace Isolation
-Configurations are project-specific and stored in `.gemini/llm-council.json` within your project root. This allows you to have a "Fast & Cheap" council for one project and a "God Mode" council for another.
-
-### Convening the Council
-You can explicitly invoke the council or specify a preferred output format:
+### Autonomous Debugging
 ```
-/council:ask "What is the best way to implement a singleton in TypeScript?"
-/council:ask --json "Compare these three sorting algorithms."
+/council:investigate "The database connection keeps timing out in production environments."
 ```
+*The council investigator will autonomously find your config files, logs, and connection logic to provide a verified fix.*
 
-### Proactive Intelligence
-The LLM Council functions as an on-demand "Brain Trust." While you can use slash commands for direct control, the Gemini Agent is also trained to recognize high-stakes scenarios—such as intricate system designs or difficult debugging— and will proactively offer to engage the Council for a multi-perspective analysis.
+### Security Audit (Automatic or Explicit)
+```
+/council:ask "Audit the new user registration flow for potential injection flaws."
+```
+*The Chairman will automatically detect the "Security" domain and load the appropriate persona.*
+
+### Global vs Project Config
+- **Global**: Stored in `~/.gemini/extensions/gemini-llm-council/config.json`.
+- **Project**: Stored in `.gemini/llm-council.json`. (Project config overrides global).
 
 ## Architecture
 
-The extension is built as a specialized Agent Skill, providing a seamless and token-efficient integration.
-
-*   **Efficiency by Design**: The Council's heavy reasoning protocols are only loaded when active, keeping your primary conversation context clean and responsive.
-*   **Drafting Phase**: Selected models provide independent, diverse solutions to your query.
-*   **Peer Review Phase**: Models critique each other's anonymized drafts to identify edge cases and vulnerabilities.
-*   **Synthesis**: The Chairman (your primary agent) synthesizes the collective findings into a single, authoritative consensus, prioritizing the most robust and secure path forward.
+*   **Autonomous Orchestration**: Uses Gemini CLI **Subagents** to isolate the heavy lifting of multi-file investigations.
+-   **Intelligent Grounding**: Uses **BeforeTool Hooks** to automatically provide context about your tech stack.
+-   **Clean UI**: Moves raw multi-model critiques to **MCP Resources**, keeping your main chat readable.
 
 ## Inspiration
 

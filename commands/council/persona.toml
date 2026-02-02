@@ -1,0 +1,16 @@
+description = "Consult the council using a specialized persona. Usage: /council:persona <name> <query>"
+prompt = """
+The user wants a specialized Council Deliberation.
+
+<persona>
+{{arg1}}
+</persona>
+
+<query>
+{{arg2}}
+</query>
+
+1. Activate the 'council-chairman' skill.
+2. Call `/mcp prompt council:{{arg1}}` to load the persona instructions.
+3. Call `council/consult` using those instructions to guide the council's peer-review and synthesis phase.
+"""

@@ -1,7 +1,7 @@
 {
   "name": "gemini-llm-council",
   "description": "Gemini CLI Extension to work with multiple LLMs at once",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "contextFileName": "GEMINI.md",
   "settings": [
     {
@@ -19,5 +19,27 @@
         "OPENROUTER_API_KEY": "${OPENROUTER_API_KEY}"
       }
     }
+  },
+  "agents": [
+    {
+      "path": "agents/council-investigator.json"
+    }
+  ],
+  "hooks": {
+    "SessionStart": [
+      {
+        "command": "hooks/check-env.sh"
+      }
+    ],
+    "BeforeTool": [
+      {
+        "command": "node hooks/inject-context.js",
+        "matcher": "council/consult|council/init_session"
+      },
+      {
+        "command": "node hooks/secure-read.js",
+        "matcher": "read_file"
+      }
+    ]
   }
 }

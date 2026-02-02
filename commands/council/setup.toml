@@ -2,5 +2,5 @@ description = "Configure the LLM Council members"
 prompt = """
 The user wants to configure the LLM Council.
 
-Activate the 'council-chairman' skill and follow the **Setup & Configuration Protocol**.
+Activate the 'council-chairman' skill and follow the **Setup & Configuration Protocol**. Make sure to ask the user if they want to save the config to the **Project** (.gemini folder) or **Global** (user home) scope.
 """

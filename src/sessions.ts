@@ -5,6 +5,7 @@ export type SessionStatus = "INITIALIZING" | "DRAFTING" | "STALLED_RFI" | "SYNTH
 export interface CouncilMemberResponse {
   model: string;
   content: string;
+  confidence?: string; 
   reasoning?: string;
   usage?: {
     prompt_tokens: number;
@@ -26,7 +27,9 @@ export interface CouncilSession {
   lastAccessed: number;
   drafts: CouncilMemberResponse[];
   reviews: CouncilMemberResponse[];
+  consensusScore: number; // 1-10 scale
   reasoningEffort: "none" | "low" | "medium" | "high";
+  requestedPaths: string[]; // Track historical RFIs to prevent loops
 }
 
 const SESSION_TTL_MS = 15 * 60 * 1000; // 15 minutes
@@ -62,7 +65,9 @@ export class SessionStore {
       reasoningEffort,
       lastAccessed: Date.now(),
       drafts: [],
-      reviews: []
+      reviews: [],
+      consensusScore: 0,
+      requestedPaths: []
     };
 
     this.sessions.set(this.getSessionKey(projectPath, sessionId), session);
