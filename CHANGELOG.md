@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-02-02
+
+### Added
+- **Autonomous Sub-agent**: Introduced `council_investigator` as a specialized sub-agent for deep codebase analysis and investigation.
+- **Hierarchical Configuration**: Support for both Global and Project-level configurations.
+- **MCP Resources**: Added support for deliberation logs and persona registration via MCP.
+- **Advanced Reporting**: Implemented confidence tracking, consensus meters, and council sentiment analysis in reports.
+- **Hooks System**: Added `SessionStart` and `BeforeTool` hooks for enhanced extensibility and security.
+- **Specialized Personas**: New personas for security audits and performance optimization.
+- **Counter-proof Challenges**: Added mechanisms for models to challenge each other's assertions during deliberation.
+
+### Fixed
+- Robust configuration validation with flexible model support.
+- Security hardening for autonomous sub-agent execution.
+- Improved RFI (Request for Information) parsing and investigator logic.
+
+### Changed
+- Refactored RFI parsing and investigator internals for better reliability.
+
+### Performance
+- Optimized prompt caching using deterministic prefixing to reduce latency and cost.
+
 ## [0.3.0] - 2026-01-28
 
 ### Added

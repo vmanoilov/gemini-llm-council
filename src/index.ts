@@ -82,7 +82,7 @@ if (!OPENROUTER_API_KEY) {
 
 const server = new McpServer({
   name: "gemini-llm-council",
-  version: "0.3.0",
+  version: "0.4.0",
 });
 
 // Register Resource: Raw Deliberations
