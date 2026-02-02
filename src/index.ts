@@ -341,6 +341,15 @@ async function runDeliberationLogic(session_id: string, force: boolean): Promise
   });
 
   const drafts = await Promise.all(draftPromises);
+  
+  // Parse confidence for each draft
+  drafts.forEach(d => {
+    const confMatch = d.content.match(/Confidence:\s*(Low|Medium|High)/i);
+    if (confMatch) {
+      d.confidence = confMatch[1];
+    }
+  });
+
   session.drafts = drafts;
 
   // Check for RFIs
@@ -569,17 +578,27 @@ function generateMarkdownReport(output: CouncilOutput): string {
 
   // Member Summary Table
   md += "### 👥 Member Status\n\n";
-  md += "| Member | Model | Drafting | Review | Tokens |\n";
-  md += "| :--- | :--- | :---: | :---: | :---: |\n";
+  md += "| Member | Model | Confidence | Drafting | Review | Tokens |\n";
+  md += "| :--- | :--- | :---: | :---: | :---: | :---: |\n";
 
   drafts.forEach((d, i) => {
     const r = reviews?.[i];
     const dStatus = d.error ? "❌" : "✅";
     const rStatus = r ? (r.error ? "❌" : "✅") : "-";
     const dTokens = (d.usage?.total_tokens || 0) + (r?.usage?.total_tokens || 0);
-    md += `| ${i + 1} | \`${d.model}\` | ${dStatus} | ${rStatus} | ${dTokens.toLocaleString()} |\n`;
+    const conf = d.confidence || "??";
+    md += `| ${i + 1} | \`${d.model}\` | ${conf} | ${dStatus} | ${rStatus} | ${dTokens.toLocaleString()} |\n`;
   });
   md += "\n";
+
+  // Sentiment Summary
+  if (consensus_score > 0) {
+    let sentiment = "";
+    if (consensus_score >= 8) sentiment = "🤝 **United**: The council is in strong agreement.";
+    else if (consensus_score >= 5) sentiment = "⚖️ **Balanced**: There is a general consensus with some minor dissent or nuances.";
+    else sentiment = "🗣️ **Divided**: The council is significantly split on the resolution.";
+    md += `**Council Sentiment**: ${sentiment}\n\n`;
+  }
 
   md += `> 📄 **Full Audit Trail**: Raw deliberations are available at \`council://sessions/${session_id}/raw-deliberation\`\n\n`;
 

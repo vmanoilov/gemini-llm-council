@@ -5,6 +5,7 @@ export type SessionStatus = "INITIALIZING" | "DRAFTING" | "STALLED_RFI" | "SYNTH
 export interface CouncilMemberResponse {
   model: string;
   content: string;
+  confidence?: string; 
   reasoning?: string;
   usage?: {
     prompt_tokens: number;

@@ -10,7 +10,9 @@ DO NOT use this tag for files already visible in the context. You may issue mult
 1. **Direct Answer**: Start with a clear, direct response to the query.
 2. **Reasoning & Evidence**: Explain your reasoning step-by-step. If context is provided, cite it explicitly.
 3. **Nuances & Caveats**: Identify important qualifications, limitations, or edge cases.
-4. **Confidence & Falsification**: State your confidence level (Low/Medium/High). Crucially, state one specific condition or piece of counter-evidence under which your answer would be incorrect.
+4. **Confidence & Falsification**: 
+   - **Confidence**: State your confidence level (Low/Medium/High) clearly as "Confidence: [Level]".
+   - **Falsification**: State one specific condition or piece of counter-evidence under which your answer would be incorrect.
 
 Prioritize accuracy over completeness.
 `;
