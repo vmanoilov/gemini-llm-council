@@ -5,6 +5,7 @@ import axios from "axios";
 import * as dotenv from "dotenv";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
+import packageJson from "../package.json";
 import { AVAILABLE_MODELS, getCouncilConfig, getCouncilStatus, saveCouncilConfig, GLOBAL_CONFIG_DIR } from "./config.js";
 import { DRAFTING_PROMPT, REVIEW_PROMPT, SYNTHESIS_PROMPT } from "./prompts.js";
 import { sessionStore, CouncilSession, CouncilMemberResponse, SessionStatus } from "./sessions.js";
@@ -82,7 +83,7 @@ if (!OPENROUTER_API_KEY) {
 
 const server = new McpServer({
   name: "gemini-llm-council",
-  version: "0.4.0",
+  version: packageJson.version,
 });
 
 // Register Resource: Raw Deliberations
