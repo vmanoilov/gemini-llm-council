@@ -5,6 +5,7 @@ import axios from "axios";
 import * as dotenv from "dotenv";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
+import packageJson from "../package.json";
 import { AVAILABLE_MODELS, getCouncilConfig, getCouncilStatus, saveCouncilConfig, GLOBAL_CONFIG_DIR } from "./config.js";
 import { DRAFTING_PROMPT, REVIEW_PROMPT, SYNTHESIS_PROMPT } from "./prompts.js";
 import { sessionStore, CouncilSession, CouncilMemberResponse, SessionStatus } from "./sessions.js";
@@ -82,7 +83,7 @@ if (!OPENROUTER_API_KEY) {
 
 const server = new McpServer({
   name: "gemini-llm-council",
-  version: "0.4.0",
+  version: packageJson.version,
 });
 
 // Register Resource: Raw Deliberations
@@ -340,7 +341,7 @@ async function runDeliberationLogic(session_id: string, force: boolean): Promise
     return { model, ...response };
   });
 
-  const drafts = await Promise.all(draftPromises);
+  const drafts: CouncilMemberResponse[] = await Promise.all(draftPromises);
   
   // Parse confidence for each draft
   drafts.forEach(d => {
@@ -404,7 +405,7 @@ async function runDeliberationLogic(session_id: string, force: boolean): Promise
     return { model, ...response };
   });
 
-  const reviews = await Promise.all(reviewPromises);
+  const reviews: CouncilMemberResponse[] = await Promise.all(reviewPromises);
   session.reviews = reviews;
 
   // Extract Consensus Score (average of scores provided by reviewers)
@@ -519,7 +520,7 @@ server.tool(
       return { content: [{ type: "text", text: JSON.stringify(result.rfi, null, 2) }] };
     }
     if (format === "json") {
-      return { content: [{ type: "text", text: JSON.stringify(result.output, null, 2) }] };
+      return { content: [{ type: "text", text: JSON.stringify({ ...result.output, report: result.report }, null, 2) }] };
     }
     return { content: [{ type: "text", text: result.report }] };
   }
@@ -550,7 +551,7 @@ server.tool(
     }
 
     if (format === "json") {
-      return { content: [{ type: "text", text: JSON.stringify(delibRes.output, null, 2) }] };
+      return { content: [{ type: "text", text: JSON.stringify({ ...delibRes.output, report: delibRes.report }, null, 2) }] };
     }
     return { content: [{ type: "text", text: delibRes.report }] };
   }
@@ -601,6 +602,39 @@ function generateMarkdownReport(output: CouncilOutput): string {
   }
 
   md += `> 📄 **Full Audit Trail**: Raw deliberations are available at \`council://sessions/${session_id}/raw-deliberation\`\n\n`;
+
+  md += "---\n";
+
+  // Drafts Section
+  md += "## 🖋️ Member Drafts\n\n";
+  drafts.forEach((d, i) => {
+    md += `### Member ${i + 1} (\`${d.model}\`)\n`;
+    if (d.error) {
+      md += `> ❌ **Error**: ${d.error}\n\n`;
+    } else {
+      if (d.reasoning) {
+        md += `<details>\n<summary>View Reasoning</summary>\n\n${d.reasoning}\n\n</details>\n\n`;
+      }
+      md += `${d.content}\n\n`;
+    }
+  });
+
+  // Reviews Section
+  if (reviews && reviews.length > 0) {
+    md += "---\n";
+    md += "## 🔍 Peer Reviews\n\n";
+    reviews.forEach((r, i) => {
+      md += `### Review ${i + 1} (\`${r.model}\`)\n`;
+      if (r.error) {
+        md += `> ❌ **Error**: ${r.error}\n\n`;
+      } else {
+        if (r.reasoning) {
+          md += `<details>\n<summary>View Reasoning</summary>\n\n${r.reasoning}\n\n</details>\n\n`;
+        }
+        md += `${r.content}\n\n`;
+      }
+    });
+  }
 
   md += "---\n";
   md += "### 📊 Metadata Summary\n";

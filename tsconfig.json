@@ -5,6 +5,7 @@
     "module": "nodenext",
     "target": "es2022",
     "moduleResolution": "nodenext",
+    "resolveJsonModule": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "strict": true,
