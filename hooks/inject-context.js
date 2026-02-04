@@ -10,7 +10,7 @@ function main() {
   const { toolName, args } = input;
 
   // Only target council tools that take a context argument
-  if (toolName !== 'council/consult' && toolName !== 'council/init_session') {
+  if (toolName !== 'council__consult' && toolName !== 'council__init_session') {
     process.exit(0);
   }
 
