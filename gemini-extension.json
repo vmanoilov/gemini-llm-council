@@ -22,11 +22,6 @@
       }
     }
   },
-  "agents": [
-    {
-      "path": "agents/council-investigator.json"
-    }
-  ],
   "hooks": {
     "SessionStart": [
       {
