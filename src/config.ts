@@ -18,7 +18,7 @@ export const AVAILABLE_MODELS = [
   { id: 'google/gemini-3-flash-preview', name: 'Gemini 3 Flash Preview', features: { caching: true } },
   { id: 'deepseek/deepseek-v3.2', name: 'DeepSeek V3.2', features: { reasoning: true, caching: true } },
   { id: 'deepseek/deepseek-v3.2-speciale', name: 'DeepSeek V3.2 Speciale', features: { reasoning: true, caching: true } },
-  { id: 'z-ai/glm-4.7', name: 'GLM-4.7', features: {} },
+  { id: 'z-ai/glm-5', name: 'GLM-5', features: {} },
   { id: 'minimax/minimax-m2.1', name: 'Minimax M2.1', features: {} },
   { id: 'moonshotai/kimi-k2.5', name: 'Kimi K2.5', features: { reasoning: true, caching: true } }
 ];
