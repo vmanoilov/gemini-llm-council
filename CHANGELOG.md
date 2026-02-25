@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.4] - 2026-02-25
+
+### Changed
+- Updated curated models to their latest versions (GPT-5.3-Codex, Gemini 3.1 Pro, Claude 4.6, GLM-5, MiniMax-M2.5).
+
 ## [0.4.3] - 2026-02-04
 
 ### Added
