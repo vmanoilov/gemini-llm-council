@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-02-25
+
+### Added
+- **Persona Engineering**: Formal support for personas with project-local overrides via `.gemini/personas.json`.
+- **Automatic IQ**: Automated persona selection based on query intent (e.g., security, performance).
+- **Hybrid Peer-Review Scaling**: Optimized token usage by using summaries for large councils while maintaining full drafts for small ones.
+- **Security Hook Hardening**: Implemented symlink protection and an expanded denylist in `secure-read.js`.
+- **Smart Context Slicing**: Optimized `package.json` injection to focus on dependencies and added support for `GEMINI.md` grounding.
+
+### Changed
+- **Synthesis Logic**: Improved Chairman's synthesis with falsification weighting for more robust consensus.
+- **Subagent Orchestration**: Updated `council_investigator` to use the new native persona parameter.
+
 ## [0.4.4] - 2026-02-25
 
 ### Changed
