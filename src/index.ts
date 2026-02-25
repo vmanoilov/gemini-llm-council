@@ -384,8 +384,20 @@ async function runDeliberationLogic(session_id: string, force: boolean): Promise
   const allTargeted = Object.values(session.targetedContext).flat();
   const groundTruth = (session.sharedContext || "") + (allTargeted.length > 0 ? "\n\nConsolidated Context:\n" + allTargeted.join("\n\n") : "");
 
+  // Hybrid review packet logic: send full drafts for small councils (<=3), summaries for larger ones.
+  const useSummaries = session.models.length > 3;
   const reviewPacket = "Here are the answers from other council members:\n\n" +
-    drafts.map((d, i) => `--- Answer ${i + 1} ---\n${d.content || "[Error: " + d.error + "]"}`).join("\n\n");
+    drafts.map((d, i) => {
+      let content = d.content || "[Error: " + d.error + "]";
+      if (useSummaries && d.content) {
+        const summaryMatch = d.content.match(/<summary>([\s\S]*?)<\/summary>/i);
+        const critiqueMatch = d.content.match(/<critique_targets>([\s\S]*?)<\/critique_targets>/i);
+        if (summaryMatch || critiqueMatch) {
+          content = `[Summary]: ${summaryMatch ? summaryMatch[1].trim() : "Not provided"}\n[Critique Targets]: ${critiqueMatch ? critiqueMatch[1].trim() : "Not provided"}`;
+        }
+      }
+      return `--- Answer ${i + 1} ---\n${content}`;
+    }).join("\n\n");
 
   const reviewPromises = session.models.map(async (model) => {
     // STABLE PREFIX: Reusing the exact same prefix as Phase 1

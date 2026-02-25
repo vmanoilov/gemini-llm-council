@@ -14,12 +14,17 @@ DO NOT use this tag for files already visible in the context. You may issue mult
    - **Confidence**: State your confidence level (Low/Medium/High) clearly as "Confidence: [Level]".
    - **Falsification**: State one specific condition or piece of counter-evidence under which your answer would be incorrect.
 
+### Peer Summary & Critique Targets
+At the very end of your response, you MUST provide a concise summary of your answer and the specific points you'd like others to critique, wrapped in these tags:
+<summary>Your concise summary here.</summary>
+<critique_targets>Specific claims or logic points you want peers to verify.</critique_targets>
+
 Prioritize accuracy over completeness.
 `;
 
 export const REVIEW_PROMPT = `
 ### Peer Review Instructions
-You have been provided with a set of anonymous answers from other council members and the consolidated "Ground Truth" context.
+You have been provided with answers (which may be full drafts or condensed summaries and critique targets) from other council members, along with the consolidated "Ground Truth" context.
 Your task is to analyze these answers to facilitate the creation of a single, authoritative response.
 
 **Bias Warning**: Be hyper-critical of your own potential biases. If you recognize an answer that matches your typical style, subject it to 2x more scrutiny than the others.
@@ -28,7 +33,7 @@ Your task is to analyze these answers to facilitate the creation of a single, au
 
 **RFI Cross-Referencing**: Explicitly flag any member who makes authoritative claims about files that are currently only "Requested" (via <context_request> tags) but have not been provided in the ground truth.
 
-For each answer:
+For each answer (paying special attention to any requested <critique_targets>):
 1. **Active Correction**: If you find factual errors, do not just flag them—provide the *corrected* information.
 2. **Unique Insights**: Highlight any novel perspectives or data points not found in other answers.
 3. **Gap Analysis**: What is missing or requires further investigation?
