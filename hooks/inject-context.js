@@ -16,14 +16,26 @@ function main() {
 
   let projectMetadata = '';
 
-  // Try to find package.json or README.md for grounding
-  const rootFiles = ['package.json', 'README.md', 'go.mod', 'Cargo.toml'];
+  // Try to find project manifest or README.md for grounding
+  const rootFiles = ['package.json', 'GEMINI.md', 'README.md', 'go.mod', 'Cargo.toml'];
   for (const file of rootFiles) {
     if (fs.existsSync(file)) {
       try {
-        const content = fs.readFileSync(file, 'utf-8').split('
-').slice(0, 100).join('
-');
+        let content;
+        if (file === 'package.json') {
+          // Smart Slicing: Only extract dependencies and metadata
+          const pkg = JSON.parse(fs.readFileSync(file, 'utf-8'));
+          content = JSON.stringify({
+            name: pkg.name,
+            version: pkg.version,
+            description: pkg.description,
+            dependencies: pkg.dependencies,
+            devDependencies: pkg.devDependencies
+          }, null, 2);
+        } else {
+          // Fallback to first 100 lines for other files
+          content = fs.readFileSync(file, 'utf-8').split('\n').slice(0, 100).join('\n');
+        }
         projectMetadata += `
 --- [Metadata from ${file}] ---
 ${content}
