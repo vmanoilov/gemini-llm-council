@@ -120,7 +120,30 @@ async function getPersonaInstructions(name: string): Promise<string> {
     "performance": "Act as a high-performance computing expert. Focus on Big O, concurrency, and I/O bottlenecks."
   };
 
-  // 1. Try to load from the extension's prompts/ directory (v0.4.0+ WYSIWYG)
+  // 1. Try to load from project-local .gemini/personas.json
+  const localPersonasPath = path.join(process.cwd(), ".gemini", "personas.json");
+  try {
+    const stats = await fs.stat(localPersonasPath);
+    const cacheKey = `local:${localPersonasPath}`;
+    const cached = personaCache.get(cacheKey);
+
+    let personasJson: Record<string, string>;
+    if (cached && cached.mtime === stats.mtimeMs) {
+      personasJson = JSON.parse(cached.content);
+    } else {
+      const data = await fs.readFile(localPersonasPath, "utf-8");
+      personaCache.set(cacheKey, { content: data, mtime: stats.mtimeMs });
+      personasJson = JSON.parse(data);
+    }
+
+    if (personasJson[name]) {
+      return personasJson[name];
+    }
+  } catch (e) {
+    // Ignore missing file or JSON errors
+  }
+
+  // 2. Try to load from the extension's prompts/ directory (v0.4.0+ WYSIWYG)
   const promptPath = path.join(_dirname, "..", "prompts", `${name}.md`);
   try {
     const stats = await fs.stat(promptPath);
@@ -281,7 +304,7 @@ server.tool(
   }
 );
 
-async function initSessionLogic(query: string, context?: string, models?: string[], reasoning_effort?: string): Promise<CouncilSession | { error: string }> {
+async function initSessionLogic(query: string, context?: string, models?: string[], reasoning_effort?: string, persona?: string): Promise<CouncilSession | { error: string }> {
   cleanupDeliberations(); // Proactive cleanup
 
   let selectedModels = models;
@@ -303,6 +326,9 @@ async function initSessionLogic(query: string, context?: string, models?: string
   if (context) {
     session.sharedContext = context;
   }
+  if (persona) {
+    session.persona = persona;
+  }
   return session;
 }
 
@@ -319,12 +345,14 @@ async function runDeliberationLogic(session_id: string, force: boolean): Promise
   // Phase 1: Drafting
   session.status = "DRAFTING";
 
+  const personaInstructions = session.persona ? await getPersonaInstructions(session.persona) : "";
+
   const draftPromises = session.models.map(async (model) => {
     const targeted = session.targetedContext[model] || [];
 
     // STABLE PREFIX: Same for both phases to maximize caching
     const stablePrefixMessages = [
-      { role: "system", content: "You are a member of an expert LLM Council. Your goal is to provide a comprehensive, accurate, and insightful answer." },
+      { role: "system", content: "You are a member of an expert LLM Council. Your goal is to provide a comprehensive, accurate, and insightful answer." + (personaInstructions ? `\n\n=== PERSONA INSTRUCTIONS ===\n${personaInstructions}` : "") },
       { role: "user", content: `=== SHARED CONTEXT ===\n${session.sharedContext || "No shared context provided."}\n\n=== USER QUERY ===\n${session.query}` }
     ];
 
@@ -465,9 +493,10 @@ server.tool(
     context: z.string().optional().describe("Initial shared context."),
     models: z.array(z.string()).optional().describe("Specific models to consult. If omitted, uses defaults."),
     reasoning_effort: z.enum(["none", "low", "medium", "high"]).optional().describe("The effort level for reasoning."),
+    persona: z.string().optional().describe("Optional persona to guide the council (e.g. security, performance)."),
   },
-  async ({ query, context, models, reasoning_effort }) => {
-    const result = await initSessionLogic(query, context, models, reasoning_effort);
+  async ({ query, context, models, reasoning_effort, persona }) => {
+    const result = await initSessionLogic(query, context, models, reasoning_effort, persona);
     if ("error" in result) {
       return { content: [{ type: "text", text: result.error }], isError: true };
     }
@@ -546,10 +575,11 @@ server.tool(
     context: z.string().optional().describe("Additional context gathered by the Chairman."),
     models: z.array(z.string()).optional().describe("Specific models to consult. If omitted, uses defaults."),
     reasoning_effort: z.enum(["none", "low", "medium", "high"]).optional().describe("The effort level for reasoning."),
+    persona: z.string().optional().describe("Optional persona to guide the council (e.g. security, performance)."),
     format: z.enum(["markdown", "json"]).optional().default("markdown").describe("The output format."),
   },
-  async ({ query, context, models, reasoning_effort, format }) => {
-    const initRes = await initSessionLogic(query, context, models, reasoning_effort);
+  async ({ query, context, models, reasoning_effort, persona, format }) => {
+    const initRes = await initSessionLogic(query, context, models, reasoning_effort, persona);
     if ("error" in initRes) {
       return { content: [{ type: "text", text: initRes.error }], isError: true };
     }

@@ -30,6 +30,7 @@ export interface CouncilSession {
   consensusScore: number; // 1-10 scale
   reasoningEffort: "none" | "low" | "medium" | "high";
   requestedPaths: string[]; // Track historical RFIs to prevent loops
+  persona?: string;
 }
 
 const SESSION_TTL_MS = 15 * 60 * 1000; // 15 minutes
