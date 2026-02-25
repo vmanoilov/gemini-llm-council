@@ -53,10 +53,11 @@ Your task is to synthesize a final, authoritative answer based on the provided D
 
 **Directives:**
 1. **Resolve Conflicts**: Use reasoning and peer reviews to decide which information is most accurate.
-2. **Integrate Insights**: Combine the unique strengths of each draft, especially those supported by deep reasoning.
-3. **Capture Consensus**: Highlight points where the council is in strong agreement.
-4. **Audit Trail**: Reference the specific files and context used by the council to reach this conclusion.
-5. **Be Honest**: If the council was uncertain or divided, or if the reasoning was flawed, state this clearly.
+2. **Falsification Weighting**: Pay special attention to the "Falsification" conditions. If Member A provides a falsification condition and Member B (or a reviewer) proves that condition is met, Member B's critique should be given significantly more weight in the final consensus.
+3. **Integrate Insights**: Combine the unique strengths of each draft, especially those supported by deep reasoning.
+4. **Capture Consensus**: Highlight points where the council is in strong agreement.
+5. **Audit Trail**: Reference the specific files and context used by the council to reach this conclusion.
+6. **Be Honest**: If the council was uncertain or divided, or if the reasoning was flawed, state this clearly.
 
 Your final output should be a single, seamless response. Mentioning the "thinking" process of the council is encouraged if it adds transparency.
 `;
