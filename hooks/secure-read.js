@@ -22,12 +22,15 @@ function main() {
     const normalizedPath = path.normalize(filePath);
     const fileName = path.basename(normalizedPath);
 
-    // 1. Denylist: Sensitive file names
-    const SENSITIVE_FILES = ['.env', 'id_rsa', 'id_ed25519', 'credentials.json', 'config.json'];
-    if (SENSITIVE_FILES.some(f => fileName.toLowerCase().includes(f))) {
+    // 1. Denylist: Sensitive file names and noise-reduction folders
+    const SENSITIVE_FILES = [
+      '.env', 'id_rsa', 'id_ed25519', 'credentials.json', 'config.json',
+      '.git/config', '.npmrc', '.ssh/', 'node_modules/'
+    ];
+    if (SENSITIVE_FILES.some(f => normalizedPath.toLowerCase().includes(f.toLowerCase()))) {
       console.log(JSON.stringify({
         block: true,
-        reason: `🔒 **Security Block**: The autonomous investigator is not allowed to read sensitive credential files (${fileName}).`
+        reason: `🔒 **Security Block**: The autonomous investigator is not allowed to read sensitive files or dependency noise (${fileName}).`
       }));
       process.exit(0);
     }
@@ -36,8 +39,17 @@ function main() {
     // CLI provides GEMINI_PROJECT_ROOT environment variable
     const projectRoot = process.env.GEMINI_PROJECT_ROOT;
     if (projectRoot) {
-      const absolutePath = path.resolve(filePath);
-      if (!absolutePath.startsWith(path.resolve(projectRoot))) {
+      let resolvedPath;
+      try {
+        // Symlink Protection: Resolve the actual physical disk path
+        resolvedPath = fs.realpathSync(filePath);
+      } catch (e) {
+        // Fallback if file doesn't exist yet
+        resolvedPath = path.resolve(filePath);
+      }
+
+      const absoluteRoot = path.resolve(projectRoot);
+      if (!resolvedPath.startsWith(absoluteRoot)) {
         console.log(JSON.stringify({
           block: true,
           reason: `🔒 **Security Block**: The autonomous investigator is restricted to the project workspace and cannot read external files.`
