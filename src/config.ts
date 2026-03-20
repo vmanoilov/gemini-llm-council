@@ -19,7 +19,7 @@ export const AVAILABLE_MODELS = [
   { id: 'deepseek/deepseek-v3.2', name: 'DeepSeek V3.2', features: { reasoning: true, caching: true } },
   { id: 'deepseek/deepseek-v3.2-speciale', name: 'DeepSeek V3.2 Speciale', features: { reasoning: true, caching: true } },
   { id: 'z-ai/glm-5', name: 'GLM-5', features: {} },
-  { id: 'minimax/minimax-m2.5', name: 'Minimax M2.5', features: {} },
+  { id: 'minimax/minimax-m2.7', name: 'Minimax M2.7', features: {} },
   { id: 'moonshotai/kimi-k2.5', name: 'Kimi K2.5', features: { reasoning: true, caching: true } }
 ];
 
