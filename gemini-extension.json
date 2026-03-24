@@ -31,7 +31,7 @@
     "BeforeTool": [
       {
         "command": "node hooks/inject-context.js",
-        "matcher": "council__consult|council__init_session"
+        "matcher": "mcp_council_consult|mcp_council_init_session"
       },
       {
         "command": "node hooks/secure-read.js",
