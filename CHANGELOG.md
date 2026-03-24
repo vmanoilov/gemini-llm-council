@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-03-24
+
+### Added
+- **New Models**: Added support for GPT-5.4 and Minimax M2.7.
+
+### Fixed
+- **Tool Names**: Standardized tool names to follow the Gemini CLI v0.33.0 convention (mcp_ FQN format).
+
 ## [0.5.0] - 2026-02-25
 
 ### Added
