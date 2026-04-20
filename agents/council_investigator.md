@@ -1,5 +1,5 @@
 ---
-name: council-investigator
+name: council_investigator
 description: An autonomous agent that explores the codebase and uses the LLM Council to reach a consensus on complex issues.
 model: auto
 tools:
