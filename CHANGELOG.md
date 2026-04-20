@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-04-20
+
+### Added
+- **New Models**: Added support for Claude Opus 4.7, GLM 5.1, Grok 4.20, Qwen3.6 Plus, and Mimo-V2-Pro.
+
+### Changed
+- **Subagent Naming**: Renamed the autonomous investigator subagent from `council-investigator` to `council_investigator` for naming consistency.
+
 ## [0.6.0] - 2026-03-24
 
 ### Added
