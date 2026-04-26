@@ -28,6 +28,7 @@ export interface CouncilSession {
   drafts: CouncilMemberResponse[];
   reviews: CouncilMemberResponse[];
   consensusScore: number; // 1-10 scale
+  individualScores: number[];
   reasoningEffort: "none" | "low" | "medium" | "high";
   requestedPaths: string[]; // Track historical RFIs to prevent loops
   persona?: string;
@@ -68,6 +69,7 @@ export class SessionStore {
       drafts: [],
       reviews: [],
       consensusScore: 0,
+      individualScores: [],
       requestedPaths: []
     };
 

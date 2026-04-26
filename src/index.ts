@@ -37,6 +37,7 @@ interface CouncilOutput {
   reviews: CouncilMemberResponse[];
   synthesis_instructions: string;
   consensus_score: number;
+  individual_scores: number[];
   total_usage: {
     prompt_tokens: number;
     completion_tokens: number;
@@ -451,6 +452,7 @@ async function runDeliberationLogic(session_id: string, force: boolean): Promise
   // Extract Consensus Score (average of scores provided by reviewers)
   let totalScore = 0;
   let scoreCount = 0;
+  const individualScores: number[] = [];
   reviews.forEach(r => {
     const scoreMatch = r.content.match(/Consensus Score:\s*(\d+)/i);
     if (scoreMatch) {
@@ -458,10 +460,12 @@ async function runDeliberationLogic(session_id: string, force: boolean): Promise
       if (!isNaN(score)) {
         totalScore += score;
         scoreCount++;
+        individualScores.push(score);
       }
     }
   });
   session.consensusScore = scoreCount > 0 ? Math.round(totalScore / scoreCount) : 0;
+  session.individualScores = individualScores;
 
   session.status = "COMPLETED";
 
@@ -470,6 +474,7 @@ async function runDeliberationLogic(session_id: string, force: boolean): Promise
     reviews,
     synthesis_instructions: SYNTHESIS_PROMPT,
     consensus_score: session.consensusScore,
+    individual_scores: session.individualScores,
     total_usage: {
       prompt_tokens: [...drafts, ...reviews].reduce((acc, r) => acc + (r.usage?.prompt_tokens || 0), 0),
       completion_tokens: [...drafts, ...reviews].reduce((acc, r) => acc + (r.usage?.completion_tokens || 0), 0),
@@ -613,6 +618,26 @@ function generateMarkdownReport(output: CouncilOutput): string {
     const empty = "░".repeat(10 - consensus_score);
     md += `### ⚖️ Consensus Meter: ${consensus_score}/10\n`;
     md += `\`[${filled}${empty}]\`\n\n`;
+
+    // Consensus Breakdown
+    if (output.individual_scores && output.individual_scores.length > 0) {
+      const agree = output.individual_scores.filter(s => s >= 8).length;
+      const neutral = output.individual_scores.filter(s => s >= 5 && s < 8).length;
+      const dissent = output.individual_scores.filter(s => s < 5).length;
+      const total = output.individual_scores.length;
+
+      const getBar = (count: number) => {
+        const size = Math.round((count / total) * 10);
+        return "█".repeat(size) + "░".repeat(10 - size);
+      };
+
+      md += "#### 📊 Consensus Breakdown\n\n";
+      md += "| Sentiment | Distribution | Count |\n";
+      md += "| :--- | :--- | :---: |\n";
+      md += `| Agree | \`${getBar(agree)}\` | ${agree} |\n`;
+      md += `| Neutral | \`${getBar(neutral)}\` | ${neutral} |\n`;
+      md += `| Dissent | \`${getBar(dissent)}\` | ${dissent} |\n\n`;
+    }
   }
 
   // Salience: Put instructions at the top for the Chairman
