@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.1] - 2026-04-26
+
+### Added
+- **New Models**: Added support for GPT-5.5 Pro, GPT-5.5, DeepSeek V4 Pro, and Kimi K2.6.
+
+### Changed
+- **Curated Models**: Cleaned up the curated list by removing older models (GPT-5.4, DeepSeek V3.2, and Kimi K2.5).
+
 ## [0.7.0] - 2026-04-20
 
 ### Added
