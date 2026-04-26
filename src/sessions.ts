@@ -33,7 +33,7 @@ export interface CouncilSession {
   persona?: string;
 }
 
-const SESSION_TTL_MS = 15 * 60 * 1000; // 15 minutes
+const SESSION_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 export class SessionStore {
   private sessions = new Map<string, CouncilSession>();
