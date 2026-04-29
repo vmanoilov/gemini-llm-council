@@ -20,7 +20,7 @@ export const AVAILABLE_MODELS = [
   { id: 'z-ai/glm-5.1', name: 'GLM-5.1', features: {} },
   { id: 'qwen/qwen3.6-plus', name: 'Qwen3.6 Plus', features: { reasoning: true, caching: true } },
   { id: 'minimax/minimax-m2.7', name: 'Minimax M2.7', features: {} },
-  { id: 'xiaomi/mimo-v2-pro', name: 'Mimo-V2-Pro', features: { reasoning: true, caching: true } },
+  { id: 'xiaomi/mimo-v2.5-pro', name: 'Mimo-V2.5-Pro', features: { reasoning: true, caching: true } },
 ];
 
 // Zod Schema for robust validation
