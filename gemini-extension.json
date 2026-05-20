@@ -1,13 +1,30 @@
 {
   "name": "gemini-llm-council",
-  "description": "Gemini CLI Extension to work with multiple LLMs at once",
-  "version": "0.7.1",
+  "description": "Gemini CLI Extension - Multi-LLM Council with any OpenAI-compatible endpoint + Gemini OAuth",
+  "version": "1.0.0",
   "contextFileName": "GEMINI.md",
   "settings": [
     {
       "name": "OpenRouter API Key",
-      "description": "Your OpenRouter API key. Get one at https://openrouter.ai/keys\n(sk-or-v1-...)",
+      "description": "Your OpenRouter API key",
       "envVar": "OPENROUTER_API_KEY",
+      "sensitive": true
+    },
+    {
+      "name": "Custom OpenAI Base URL",
+      "description": "Base URL for any OpenAI-compatible endpoint (e.g. https://api.groq.com/openai/v1, http://localhost:11434/v1)",
+      "envVar": "CUSTOM_OPENAI_BASE_URL"
+    },
+    {
+      "name": "Custom OpenAI API Key",
+      "description": "API key for custom OpenAI-compatible endpoint",
+      "envVar": "CUSTOM_OPENAI_API_KEY",
+      "sensitive": true
+    },
+    {
+      "name": "Gemini OAuth Tokens",
+      "description": "For Gemini Pro subscription (after OAuth login)",
+      "envVar": "GEMINI_OAUTH_TOKENS",
       "sensitive": true
     }
   ],
@@ -18,25 +35,10 @@
         "${extensionPath}/dist/index.js"
       ],
       "env": {
-        "OPENROUTER_API_KEY": "${OPENROUTER_API_KEY}"
+        "OPENROUTER_API_KEY": "${OPENROUTER_API_KEY}",
+        "CUSTOM_OPENAI_BASE_URL": "${CUSTOM_OPENAI_BASE_URL}",
+        "CUSTOM_OPENAI_API_KEY": "${CUSTOM_OPENAI_API_KEY}"
       }
     }
-  },
-  "hooks": {
-    "SessionStart": [
-      {
-        "command": "hooks/check-env.sh"
-      }
-    ],
-    "BeforeTool": [
-      {
-        "command": "node hooks/inject-context.js",
-        "matcher": "mcp_council_consult|mcp_council_init_session"
-      },
-      {
-        "command": "node hooks/secure-read.js",
-        "matcher": "read_file"
-      }
-    ]
   }
 }
