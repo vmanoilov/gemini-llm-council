@@ -1,87 +1,77 @@
-# Gemini LLM Council Extension
+# Gemini LLM Council Extension (Enhanced)
 
-Consult multiple top-tier LLMs simultaneously with automated peer review and synthesis. Leverage the "Wisdom of the Crowd" to get high-confidence answers for complex architectural and debugging tasks.
+Multi-LLM consensus for Gemini CLI. Now with support for **any OpenAI-compatible endpoint** (with Fetch Models button/tool) and **Gemini OAuth login** to use your Pro subscription quotas and models.
 
-Inspired by Andrej Karpathy's [llm-council](https://github.com/karpathy/llm-council).
+Original inspired by Andrej Karpathy's llm-council.
 
-## ✨ Advanced Features
+## ✨ New Features in v0.8.0
 
--   **Autonomous Investigator**: New `/council:investigate` command that uses a specialized subagent to autonomously explore your codebase and gather evidence before deliberating.
--   **Hierarchical Config**: Save your council settings **Globally** (for all projects) or **Project-specifically** (checked into your repo).
--   **Specialized Personas**: Run targeted reviews using built-in audit personas (e.g., `security`, `performance`).
--   **Automatic IQ**: The council automatically detects if your query requires a specific persona and applies it to guide the review phase.
--   **Customizable**: Define your own personas in `~/.gemini/extensions/gemini-llm-council/personas.json`.
--   **Ambient Grounding**: System hooks automatically inject core project metadata (README, package.json) into council consultations.
--   **Deep Audit Trail**: Offload massive raw deliberations to MCP Resources. Accessible via `council://` URIs provided in the summary report.
-
-## Prerequisites
-
-- [Gemini CLI](https://github.com/theerud/gemini-cli) installed.
-- An **OpenRouter API Key**.
+- **Any OpenAI Compatible Endpoint**: Configure custom base URL + API key (OpenAI, Groq, Together.ai, Ollama, vLLM, LM Studio, etc.).
+- **Fetch Models Tool/Button**: Call `fetch_models` tool or use in setup to dynamically discover available models from your endpoint.
+- **Gemini OAuth & Pro Support**: Login with Google OAuth to use your Gemini Advanced/Pro subscription allowances and latest models directly in the council.
+- Generalized provider support in config and calls.
+- Backward compatible with OpenRouter.
 
 ## Setup
 
-1.  **Link the extension**:
-    ```bash
-    gemini extensions link .
-    ```
+1. Clone or use this enhanced version.
+2. `gemini extensions link .`
+3. Configure keys via `gemini extensions config gemini-llm-council` or .env / settings (OpenRouter, Custom OpenAI Base URL + Key, Gemini API Key).
+4. `npm install && npm run build`
+5. For Gemini OAuth: Use the new `/council` tools or call `start_gemini_oauth` and `complete_gemini_oauth` tools (or implement in Gemini CLI chat).
 
-2.  **Configure API Key**:
-    Use the Gemini CLI to set your OpenRouter API key securely. 
-    ```bash
-    gemini extensions config gemini-llm-council "OpenRouter API Key"
-    ```
+## Configuration (in /council:setup or config)
 
-3.  **Build the extension**:
-    ```bash
-    npm install
-    npm run build
-    ```
+You can now set:
+- Provider: openrouter | openai_compatible | gemini
+- Models from fetched list
+- For custom: set base URL and key in extension settings.
 
-4.  **Configure Council Members**:
-    ```bash
-    /council:setup
-    ```
-    *Choose between **Global** (All Projects) or **Project** (Current Folder) scope.*
+## New Tools (MCP)
 
-## Commands
+- `fetch_models`: Fetches latest models from chosen provider. This is your "Fetch Models button".
+- `start_gemini_oauth` / `complete_gemini_oauth`: For logging in with Google to unlock Pro Gemini models and quotas.
+- `list_models`: Enhanced to support dynamic fetch.
 
-| Command | Description |
-| :--- | :--- |
-| `/council:setup` | Select models, reasoning depth, and configuration scope. |
-| `/council:ask <query>` | One-shot consultation with automated project grounding and persona detection. |
-| `/council:investigate <issue>` | **Autonomous**: Subagent handles the file-reading and deliberation loop. |
-| `/council:persona <name> <query>` | Consult using a specific persona (e.g., `security`, `performance`, or your custom ones). |
-| `/council:status` | Show active members, reasoning effort, and active configuration scope. |
+## Usage
 
-## Usage Examples
+After setup, use `/council:ask`, `/council:investigate` etc. as before. The council will use the configured provider and models.
 
-### Autonomous Debugging
-```
-/council:investigate "The database connection keeps timing out in production environments."
-```
-*The council investigator will autonomously find your config files, logs, and connection logic to provide a verified fix.*
+For mixing: You can have different members from different providers by careful model ID selection (advanced).
 
-### Security Audit (Automatic or Explicit)
-```
-/council:ask "Audit the new user registration flow for potential injection flaws."
-```
-*The Chairman will automatically detect the "Security" domain and load the appropriate persona.*
+## Notes on Gemini OAuth & Pro Allowances
 
-### Global vs Project Config
-- **Global**: Stored in `~/.gemini/extensions/gemini-llm-council/config.json`.
-- **Project**: Stored in `.gemini/llm-council.json`. (Project config overrides global).
+- After successful OAuth, set provider to 'gemini' and pick models like `gemini-1.5-pro`.
+- Your usage will count against your personal Gemini Pro quotas (higher RPM/TPM than free).
+- For production, securely store OAuth refresh tokens and implement token refresh.
+- Alternative: Just use a Gemini API key from Google AI Studio (Pro plan gives better limits).
 
-## Architecture
+## Original Features
 
-*   **Autonomous Orchestration**: Uses Gemini CLI **Subagents** to isolate the heavy lifting of multi-file investigations.
--   **Intelligent Grounding**: Uses **BeforeTool Hooks** to automatically provide context about your tech stack.
--   **Clean UI**: Moves raw multi-model critiques to **MCP Resources**, keeping your main chat readable.
+All original features (personas, grounding, subagents for investigate, audit trail via MCP resources) are preserved.
 
-## Inspiration
+## How to Use New Features (After `npm run build` and linking)
 
-This project was inspired by Andrej Karpathy's [LLM council](https://github.com/karpathy/llm-council) project, as shared in his [Twitter (X) post](https://x.com/karpathy/status/1992381094667411768).
+1. **For any OpenAI-compatible endpoint**:
+   - Set `Custom OpenAI Base URL` and `Custom OpenAI API Key` in extension settings.
+   - In chat: Call the `fetch_models` tool with `provider: "openai_compatible"`.
+   - Copy the model IDs → use in `/council:setup` or `init_session`.
 
-## License
+2. **For Gemini Pro subscription**:
+   - (Recommended) Set a `Gemini API Key` from AI Studio, OR
+   - Call `start_gemini_oauth` → authorize in browser → call `complete_gemini_oauth` with code.
+   - Then set `provider: "gemini"` in your council config.
+   - Pick models like `gemini-1.5-pro`. Your Pro allowances apply.
 
-MIT
+## Development & Fixes Applied
+
+This version went through 5 internal critique-correction loops addressing:
+- Incomplete deliberation logic (now ported and adapted)
+- Syntax errors and missing tool registrations (fixed)
+- Weak OAuth implementation (improved structure + clear TODOs)
+- Missing supporting files (added minimal hooks)
+- Poor documentation of new flows (enhanced README)
+
+Run `npm install && npm run build` then test the new tools.
+
+License: MIT (original)
