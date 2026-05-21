@@ -1,13 +1,31 @@
 {
   "name": "gemini-llm-council",
-  "description": "Gemini CLI Extension to work with multiple LLMs at once",
-  "version": "0.7.1",
+  "description": "Gemini CLI Extension to work with multiple LLMs at once. Supports OpenRouter, custom OpenAI-compatible endpoints (with fetch models), and Gemini OAuth for Pro subscription models.",
+  "version": "0.8.0",
   "contextFileName": "GEMINI.md",
   "settings": [
     {
       "name": "OpenRouter API Key",
-      "description": "Your OpenRouter API key. Get one at https://openrouter.ai/keys\n(sk-or-v1-...)",
+      "description": "Your OpenRouter API key for accessing many models. Get one at https://openrouter.ai/keys",
       "envVar": "OPENROUTER_API_KEY",
+      "sensitive": true
+    },
+    {
+      "name": "Custom OpenAI Base URL",
+      "description": "Base URL for any OpenAI-compatible endpoint (e.g. https://api.openai.com/v1, https://api.groq.com/openai/v1, http://localhost:11434/v1). Leave empty to disable custom provider.",
+      "envVar": "CUSTOM_OPENAI_BASE_URL",
+      "sensitive": false
+    },
+    {
+      "name": "Custom OpenAI API Key",
+      "description": "API key for the custom OpenAI-compatible endpoint.",
+      "envVar": "CUSTOM_OPENAI_API_KEY",
+      "sensitive": true
+    },
+    {
+      "name": "Gemini API Key (fallback)",
+      "description": "Optional Google Gemini API key from AI Studio. Used if OAuth not configured. Higher quotas with Pro plan.",
+      "envVar": "GEMINI_API_KEY",
       "sensitive": true
     }
   ],
@@ -18,7 +36,10 @@
         "${extensionPath}/dist/index.js"
       ],
       "env": {
-        "OPENROUTER_API_KEY": "${OPENROUTER_API_KEY}"
+        "OPENROUTER_API_KEY": "${OPENROUTER_API_KEY}",
+        "CUSTOM_OPENAI_BASE_URL": "${CUSTOM_OPENAI_BASE_URL}",
+        "CUSTOM_OPENAI_API_KEY": "${CUSTOM_OPENAI_API_KEY}",
+        "GEMINI_API_KEY": "${GEMINI_API_KEY}"
       }
     }
   },
