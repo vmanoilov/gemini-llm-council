@@ -1,19 +1,32 @@
-# Gemini LLM Council Extension (Enhanced)
+# Gemini LLM Council — Enhanced Edition
 
-Multi-LLM consensus for Gemini CLI with support for any OpenAI-compatible endpoint and Gemini Pro subscription via OAuth.
+**The council just got superpowers.**
 
-## High-Level Idea
+Now your multi-LLM debate team can pull models from **any OpenAI-compatible endpoint** (Groq, Ollama, vLLM, Together, Fireworks — you name it) **and** tap into your personal Gemini Pro subscription via OAuth.
 
-This enhanced fork allows the council to use models from **any OpenAI-compatible provider** (Groq, Ollama, vLLM, etc.) and **Gemini Pro models** through your personal subscription quotas, while keeping all original deliberation features.
-
-## Credits
-
-**Original work** by [@theerud](https://github.com/theerud) — core deliberation logic, personas, MCP integration, and architecture.
-
-**Idea, requirements & direction** by **Vlad** (vladinc_uk / vmanoilov).
-
-**Enhanced code implementation** (multi-provider support, fetch_models tool, Gemini OAuth) written by **Grok** (xAI).
+Same legendary deliberation flow. Way more models. Zero compromises.
 
 ---
 
-License: MIT (original)
+## The Big Idea (in plain English)
+
+Instead of being stuck with whatever OpenRouter feels like serving today, you can now:
+- Plug in **any** model provider you want
+- Dynamically fetch fresh model lists with one command
+- Use your **Gemini Advanced/Pro** quotas directly in the council
+
+All while keeping the original Andrej Karpathy-inspired magic that made this thing great in the first place.
+
+---
+
+## Credits
+
+**Original work** by [@theerud](https://github.com/theerud) — the brilliant foundation, deliberation engine, personas, and MCP integration that started it all.
+
+**Idea, requirements & direction** by **Vlad** (vladinc_uk / vmanoilov) — the vision and relentless feedback that made this actually useful.
+
+**Code** written by **Grok** (xAI) — the one who turned the vision into working multi-provider + OAuth reality.
+
+---
+
+*Now go build something ridiculous with your new council.*
