@@ -1,30 +1,31 @@
 {
   "name": "gemini-llm-council",
-  "description": "Gemini CLI Extension - Multi-LLM Council with any OpenAI-compatible endpoint + Gemini OAuth",
-  "version": "1.0.0",
+  "description": "Gemini CLI Extension to work with multiple LLMs at once. Supports OpenRouter, custom OpenAI-compatible endpoints (with fetch models), and Gemini OAuth for Pro subscription models.",
+  "version": "0.8.0",
   "contextFileName": "GEMINI.md",
   "settings": [
     {
       "name": "OpenRouter API Key",
-      "description": "Your OpenRouter API key",
+      "description": "Your OpenRouter API key for accessing many models. Get one at https://openrouter.ai/keys",
       "envVar": "OPENROUTER_API_KEY",
       "sensitive": true
     },
     {
       "name": "Custom OpenAI Base URL",
-      "description": "Base URL for any OpenAI-compatible endpoint (e.g. https://api.groq.com/openai/v1, http://localhost:11434/v1)",
-      "envVar": "CUSTOM_OPENAI_BASE_URL"
+      "description": "Base URL for any OpenAI-compatible endpoint (e.g. https://api.openai.com/v1, https://api.groq.com/openai/v1, http://localhost:11434/v1). Leave empty to disable custom provider.",
+      "envVar": "CUSTOM_OPENAI_BASE_URL",
+      "sensitive": false
     },
     {
       "name": "Custom OpenAI API Key",
-      "description": "API key for custom OpenAI-compatible endpoint",
+      "description": "API key for the custom OpenAI-compatible endpoint.",
       "envVar": "CUSTOM_OPENAI_API_KEY",
       "sensitive": true
     },
     {
-      "name": "Gemini OAuth Tokens",
-      "description": "For Gemini Pro subscription (after OAuth login)",
-      "envVar": "GEMINI_OAUTH_TOKENS",
+      "name": "Gemini API Key (fallback)",
+      "description": "Optional Google Gemini API key from AI Studio. Used if OAuth not configured. Higher quotas with Pro plan.",
+      "envVar": "GEMINI_API_KEY",
       "sensitive": true
     }
   ],
@@ -37,8 +38,26 @@
       "env": {
         "OPENROUTER_API_KEY": "${OPENROUTER_API_KEY}",
         "CUSTOM_OPENAI_BASE_URL": "${CUSTOM_OPENAI_BASE_URL}",
-        "CUSTOM_OPENAI_API_KEY": "${CUSTOM_OPENAI_API_KEY}"
+        "CUSTOM_OPENAI_API_KEY": "${CUSTOM_OPENAI_API_KEY}",
+        "GEMINI_API_KEY": "${GEMINI_API_KEY}"
       }
     }
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "command": "hooks/check-env.sh"
+      }
+    ],
+    "BeforeTool": [
+      {
+        "command": "node hooks/inject-context.js",
+        "matcher": "mcp_council_consult|mcp_council_init_session"
+      },
+      {
+        "command": "node hooks/secure-read.js",
+        "matcher": "read_file"
+      }
+    ]
   }
 }
